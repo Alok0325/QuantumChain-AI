@@ -1,0 +1,233 @@
+.home {
+  padding-top: 80px;
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.home::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.hero-section {
+  width: 100%;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-content {
+  text-align: center;
+}
+
+.hero-title {
+  font-size: 4rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #00ffff 0%, #0088ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+.ai-text {
+  color: #00ffff;
+  text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+.hero-subtitle {
+  font-size: 1.5rem;
+  color: #a0a0a0;
+  margin-bottom: 2rem;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.cta-button {
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.cta-button.primary {
+  background: linear-gradient(135deg, #00ffff 0%, #0088ff 100%);
+  color: #000000;
+  border: none;
+}
+
+.cta-button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
+}
+
+.cta-button.secondary {
+  background: transparent;
+  color: #00ffff;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.cta-button.secondary:hover {
+  background: rgba(0, 255, 255, 0.1);
+  border-color: #00ffff;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+.hero-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.feature-card {
+  background: rgba(16, 16, 16, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+  border-color: rgba(0, 255, 255, 0.2);
+}
+
+.feature-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.feature-card h3 {
+  color: #00ffff;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.feature-card p {
+  color: #a0a0a0;
+  line-height: 1.6;
+}
+
+.market-section {
+  width: 100%;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.section-title {
+  color: #ffffff;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.market-card {
+  background: rgba(16, 16, 16, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.market-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+  border-color: rgba(0, 255, 255, 0.2);
+}
+
+.market-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.market-name {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.market-change {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.market-change.positive {
+  background: rgba(0, 255, 0, 0.1);
+  color: #00ff00;
+}
+
+.market-change.negative {
+  background: rgba(255, 0, 0, 0.1);
+  color: #ff4444;
+}
+
+.market-price {
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.market-volume {
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .hero-buttons {
+    flex-direction: column;
+  }
+  
+  .market-grid {
+    grid-template-columns: 1fr;
+  }
+} 

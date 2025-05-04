@@ -1,4 +1,4 @@
-# QuantumChain AI - P2P Cryptocurrency Exchange
+# QuantumChain AI AI AI - P2P Cryptocurrency Exchange
 
 A modern P2P cryptocurrency exchange platform with AI-powered features.
 
@@ -30,7 +30,7 @@ A modern P2P cryptocurrency exchange platform with AI-powered features.
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd quantumchain-ai
+cd QuantumChain AI AI-ai
 ```
 
 2. Set up the database:
@@ -43,7 +43,7 @@ cd quantumchain-ai
 DB_HOST=localhost
 DB_USER=your_mysql_username
 DB_PASSWORD=your_mysql_password
-DB_NAME=quantumchain_db
+DB_NAME=QuantumChain AI AI_db
 JWT_SECRET=your_jwt_secret_key
 PORT=5000
 ```
@@ -75,7 +75,7 @@ The application will be available at:
 ## Project Structure
 
 ```
-quantumchain-ai/
+QuantumChain AI AI-ai/
 ├── client/                 # React frontend
 │   ├── src/
 │   │   ├── components/    # React components

@@ -1,0 +1,23 @@
+.error-alert-modal .modal-content {
+    border-radius: 10px;
+    border: 2px solid #dc3545;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    background-color: #f8d7da; /* Light red for error background */
+  }
+  
+  .error-alert-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #dc3545; /* Bootstrap danger color */
+  }
+  
+  .error-alert-description {
+    font-size: 1rem;
+    color: #721c24; /* Darker red for text */
+  }
+  
+  .error-alert-modal .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+  }
+  

@@ -1,33 +1,37 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext(null);
 
-export const useAuth = () => useContext(AuthContext);
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Set default axios header
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // Fetch user data
-      fetchUserData();
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchUserData = async () => {
+  const register = async (username, email, password) => {
     try {
-      const response = await axios.get('http://localhost:5000/api/auth/me');
-      setUser(response.data);
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      logout();
+      setLoading(true);
+      setError(null);
+      
+      // TODO: Replace with actual API call
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      setUser(data.user);
+      return { success: true };
+    } catch (err) {
+      setError(err.message);
+      return { success: false, message: err.message };
     } finally {
       setLoading(false);
     }
@@ -35,56 +39,55 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
-        email,
-        password,
-      });
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Login failed',
-      };
-    }
-  };
+      setLoading(true);
+      setError(null);
 
-  const register = async (username, email, password) => {
-    try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
-        username,
-        email,
-        password,
+      // TODO: Replace with actual API call
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      setUser(data.user);
       return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Registration failed',
-      };
+    } catch (err) {
+      setError(err.message);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
     setUser(null);
+    // TODO: Add API call to invalidate session
   };
 
   const value = {
     user,
     loading,
-    login,
+    error,
     register,
+    login,
     logout,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }; 

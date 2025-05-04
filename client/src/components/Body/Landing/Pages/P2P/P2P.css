@@ -1,0 +1,239 @@
+.p2p-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.p2p-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: rgba(16, 16, 16, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+  padding-bottom: 1rem;
+}
+
+.tab-button {
+  padding: 0.75rem 2rem;
+  border: none;
+  background: transparent;
+  color: #a0a0a0;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.tab-button:hover {
+  color: #00ffff;
+  background: rgba(0, 255, 255, 0.1);
+}
+
+.tab-button.active {
+  color: #00ffff;
+  background: rgba(0, 255, 255, 0.1);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+.filters {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-group label {
+  color: #00ffff;
+  font-size: 0.9rem;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.filter-select,
+.amount-input {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.filter-select:focus,
+.amount-input:focus {
+  outline: none;
+  border-color: #00ffff;
+  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2),
+              0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+.listings-container {
+  background: rgba(16, 16, 16, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.listings-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 2fr 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(0, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.header-item {
+  color: #00ffff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.listings {
+  display: flex;
+  flex-direction: column;
+}
+
+.listing-card {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 2fr 1fr 1fr;
+  gap: 1rem;
+  padding: 1.5rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.listing-card:hover {
+  background: rgba(0, 255, 255, 0.05);
+}
+
+.listing-item {
+  display: flex;
+  align-items: center;
+}
+
+.trader-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.trader-name {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.trader-stats {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.rating {
+  color: #00ff00;
+}
+
+.trades {
+  color: #a0a0a0;
+}
+
+.price {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.limits {
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+.payment-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.payment-method {
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.available {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.trade-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #00ffff 0%, #0088ff 100%);
+  color: #000000;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.trade-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
+}
+
+@media (max-width: 1024px) {
+  .listings-header,
+  .listing-card {
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  }
+
+  .header-item:last-child,
+  .listing-item:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .listings-header,
+  .listing-card {
+    grid-template-columns: 2fr 1fr 1fr;
+  }
+
+  .header-item:nth-child(4),
+  .header-item:nth-child(5),
+  .listing-item:nth-child(4),
+  .listing-item:nth-child(5) {
+    display: none;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+} 

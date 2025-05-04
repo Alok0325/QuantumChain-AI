@@ -1,0 +1,33 @@
+.page-not-found-container {
+  background-color: #f8f9fa;
+}
+
+.page-not-found-content {
+  padding: 2rem;
+}
+
+.page-not-found-title {
+  color: #dc3545;
+  font-weight: bold;
+  font-size: 6rem;
+}
+
+.page-not-found-subtitle {
+  color: #343a40;
+  font-size: 2rem;
+}
+
+.page-not-found-text {
+  color: #6c757d;
+  font-size: 1.1rem;
+}
+
+.page-not-found-button {
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+}
+
+.page-not-found-button:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+} 

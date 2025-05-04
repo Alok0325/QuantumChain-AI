@@ -53,13 +53,8 @@ exports.userSignUp = async (req, res, next) => {
       { transaction }
     );
 
-    const newUserProfile = await UserProfile.create(
-      {
-        UserId: newUser.id,
-      },
-      { transaction }
-    );
-
+    
+    
     await transaction.commit();
 
     res.status(201).json({ message: "User created successfully" });
@@ -110,7 +105,7 @@ exports.userLogin = async (req, res, next) => {
     return res.status(200).json({
       message: "Login Successful",
       token,
-      userId: user.id,
+     user:{id: user.id},
     });
   } catch (err) {
     console.error("Error during login:", err);
