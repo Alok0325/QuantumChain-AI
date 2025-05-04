@@ -40,3 +40,6 @@ server/uploads/kyc/
 .cache/
 .temp/
 *.log 
+
+server/node_modules/
+client/node_modules/
