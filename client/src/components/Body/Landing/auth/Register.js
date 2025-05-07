@@ -8,6 +8,7 @@ const Register = () => {
   const { register } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
+    phone: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -30,7 +31,7 @@ const Register = () => {
       return;
     }
 
-    const result = await register(formData.username, formData.email, formData.password);
+    const result = await register(formData.username, formData.phone, formData.email, formData.password);
     if (result.success) {
       navigate('/dashboard');
     } else {
@@ -57,6 +58,19 @@ const Register = () => {
               onChange={handleChange}
               required
               placeholder="Enter your username"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="phone">Phone Number</label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              placeholder="Enter your phone number"
             />
           </div>
 

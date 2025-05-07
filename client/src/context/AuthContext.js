@@ -7,18 +7,19 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const register = async (username, email, password) => {
+  const register = async (username, phone, email, password) => {
     try {
       setLoading(true);
       setError(null);
       
       // TODO: Replace with actual API call
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/user/auth/signUp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username,phone, email, password }),
+        credentials: 'include'
       });
 
       const data = await response.json();
@@ -37,18 +38,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (emailorphone, password) => {
     try {
       setLoading(true);
       setError(null);
 
       // TODO: Replace with actual API call
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/user/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ emailorphone, password }),
+        credentials: 'include'
       });
 
       const data = await response.json();
