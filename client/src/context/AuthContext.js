@@ -57,15 +57,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (emailorphone, password) => {
+  const login = async (emailOrPhone, password) => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log('Login attempt with:', { emailorphone, password }); // Debug log
+      console.log('Login attempt with:', { emailOrPhone, password }); // Debug log
 
       const { data } = await api.post('/user/auth/login', {
-        emailOrPhone: emailorphone,
+        emailOrPhone,
         password
       });
 

@@ -23,8 +23,8 @@ const Login = () => {
     e.preventDefault();
     setError('');
 
-    const result = await login(formData.email, formData.phone, formData.password);
-    if (result.success) { 
+    const result = await login(formData.email, formData.password);
+    if (result) { 
       navigate('/dashboard');
     } else {
       setError(result.message);
