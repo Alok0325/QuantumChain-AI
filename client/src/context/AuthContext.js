@@ -1,6 +1,33 @@
 import React, { createContext, useContext, useState } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext(null);
+const API_BASE_URL = 'http://localhost:5000';
+
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  // Add CORS configuration
+  withCredentials: true,
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN'
+});
+
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized access
+      console.log('Unauthorized access');
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -12,27 +39,19 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      // TODO: Replace with actual API call
-      const response = await fetch('/user/auth/signUp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username,phone, email, password }),
-        credentials: 'include'
+      const { data } = await api.post('/user/auth/signUp', {
+        name: username,
+        phone,
+        email,
+        password
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
 
       setUser(data.user);
       return { success: true };
     } catch (err) {
-      setError(err.message);
-      return { success: false, message: err.message };
+      const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
+      setError(errorMessage);
+      return { success: false, message: errorMessage };
     } finally {
       setLoading(false);
     }
@@ -43,27 +62,22 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // TODO: Replace with actual API call
-      const response = await fetch('/user/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ emailorphone, password }),
-        credentials: 'include'
+      console.log('Login attempt with:', { emailorphone, password }); // Debug log
+
+      const { data } = await api.post('/user/auth/login', {
+        emailOrPhone: emailorphone,
+        password
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+      console.log('Login response:', data); // Debug log
 
       setUser(data.user);
-      return { success: true };
+      return data;
     } catch (err) {
-      setError(err.message);
-      return { success: false, message: err.message };
+      console.error('Login error:', err.response?.data || err.message); // Debug log
+      const errorMessage = err.response?.data?.message || err.message || 'Login failed';
+      setError(errorMessage);
+      return { success: false, message: errorMessage };
     } finally {
       setLoading(false);
     }

@@ -21,8 +21,9 @@ app.set("trust proxy", 1); // 1 means trust the first proxy, usually Nginx or an
 
 app.use(
   cors({
-    origin: "*",
+    origin: "http://localhost:3001",
     methods: ["GET", "POST"],
+    credentials: true
   })
 );
 
