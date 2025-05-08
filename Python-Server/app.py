@@ -5,9 +5,8 @@ import os
 app = Flask(__name__)
 
 # Initialize the model trainer with your Binance API credentials
-api_key = "YOUR_API_KEY"
-api_secret = "YOUR_API_SECRET"
-trainer = CryptoModelTrainer(api_key, api_secret)
+
+trainer = CryptoModelTrainer()
 
 @app.route('/predict', methods=['GET'])
 def predict():
