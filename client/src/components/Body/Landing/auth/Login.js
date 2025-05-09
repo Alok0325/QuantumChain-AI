@@ -24,8 +24,8 @@ const Login = () => {
     setError('');
 
     const result = await login(formData.email, formData.password);
-    if (result) { 
-      navigate('/dashboard');
+    if (result.success) {
+      navigate('/portfolio');
     } else {
       setError(result.message);
     }
@@ -33,26 +33,21 @@ const Login = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-card">
-        <h2>Welcome Back</h2>
-        <p className="auth-subtitle">Sign in to your QuantumChain account</p>
-        
+      <div className="auth-box">
+        <h2>Login to Your Account</h2>
         {error && <div className="error-message">{error}</div>}
-        
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Email or Phone</label>
             <input
-              type="email"
+              type="text"
               id="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               required
-              placeholder="Enter your email"
             />
           </div>
-
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
@@ -62,15 +57,12 @@ const Login = () => {
               value={formData.password}
               onChange={handleChange}
               required
-              placeholder="Enter your password"
             />
           </div>
-
-          <button type="submit" className="auth-button">Sign In</button>
+          <button type="submit" className="auth-button">Login</button>
         </form>
-
-        <p className="auth-footer">
-          Don't have an account? <Link to="/register">Create Account</Link>
+        <p className="auth-link">
+          Don't have an account? <Link to="/register">Register</Link>
         </p>
       </div>
     </div>

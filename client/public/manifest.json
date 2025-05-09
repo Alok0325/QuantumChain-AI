@@ -1,6 +1,6 @@
 {
-  "short_name": "QuantumChain",
-  "name": "QuantumChain - AI-Powered Cryptocurrency Exchange",
+  "short_name": "QuantumChain AI",
+  "name": "QuantumChain AI - Cryptocurrency Trading Platform",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,13 +8,18 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo.png",
+      "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#00ff88",
-  "background_color": "#1a1a1a"
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
 } 

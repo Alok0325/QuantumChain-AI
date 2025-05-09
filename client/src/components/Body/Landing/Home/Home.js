@@ -8,7 +8,7 @@ const Home = () => {
       <div className="hero-section">
         <div className="hero-content">
           <h1 className="hero-title">
-            <span className="gradient-text">QuantumChain  </span>
+            <span className="gradient-text">QuantumChain AI</span>
             <span className="ai-text">AI</span>
           </h1>
           <p className="hero-subtitle">

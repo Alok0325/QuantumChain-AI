@@ -10,6 +10,7 @@
     "axios": "^1.6.2",
     "chart.js": "^4.4.9",
     "chartjs-adapter-date-fns": "^3.0.0",
+    "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "lightweight-charts": "^3.8.0",
     "react": "^18.2.0",

@@ -33,7 +33,7 @@ const Register = () => {
 
     const result = await register(formData.username, formData.phone, formData.email, formData.password);
     if (result.success) {
-      navigate('/dashboard');
+      navigate('/portfolio');
     } else {
       setError(result.message);
     }
@@ -43,7 +43,7 @@ const Register = () => {
     <div className="auth-container">
       <div className="auth-card">
         <h2>Create Account</h2>
-        <p className="auth-subtitle">Join QuantumChain and start trading</p>
+        <p className="auth-subtitle">Join QuantumChain AI and start trading</p>
         
         {error && <div className="error-message">{error}</div>}
         

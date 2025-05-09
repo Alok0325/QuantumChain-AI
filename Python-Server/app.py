@@ -1,11 +1,22 @@
 from flask import Flask, jsonify, request
 from model_trainer import CryptoModelTrainer
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
 
-# Initialize the model trainer with your Binance API credentials
+# Configure CORS with specific settings
+CORS(app, 
+     resources={r"/*": {
+         "origins": ["http://localhost:3000"],
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         "allow_headers": ["Content-Type", "Authorization"],
+         "supports_credentials": True,
+         "expose_headers": ["Content-Type", "Authorization"]
+     }},
+     supports_credentials=True)
 
+# Initialize the model trainer with your Binance API credentials
 trainer = CryptoModelTrainer()
 
 @app.route('/predict', methods=['GET'])

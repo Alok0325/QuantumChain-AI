@@ -1,109 +1,92 @@
-import React, { createContext, useContext, useState } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const AuthContext = createContext(null);
-const API_BASE_URL = 'http://localhost:5000';
+const AuthContext = createContext();
 
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  // Add CORS configuration
-  withCredentials: true,
-  xsrfCookieName: 'XSRF-TOKEN',
-  xsrfHeaderName: 'X-XSRF-TOKEN'
-});
-
-// Add response interceptor for better error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      console.log('Unauthorized access');
-    }
-    return Promise.reject(error);
-  }
-);
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const register = async (username, phone, email, password) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const { data } = await api.post('/user/auth/signUp', {
-        name: username,
-        phone,
-        email,
-        password
-      });
-
-      setUser(data.user);
-      return { success: true };
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
-      setError(errorMessage);
-      return { success: false, message: errorMessage };
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    // Check for stored user data
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
+    setLoading(false);
+  }, []);
+
+  const register = async (userData) => {
+    // Mock registration
+    const newUser = {
+      id: Date.now().toString(),
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone || '',
+      binanceApiKey: '',
+      binanceApiSecret: '',
+      twoFactorEnabled: false,
+      notificationsEnabled: true,
+      createdAt: new Date().toISOString()
+    };
+    
+    setUser(newUser);
+    localStorage.setItem('user', JSON.stringify(newUser));
+    return { success: true, user: newUser };
   };
 
-  const login = async (emailOrPhone, password) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      console.log('Login attempt with:', { emailOrPhone, password }); // Debug log
-
-      const { data } = await api.post('/user/auth/login', {
-        emailOrPhone,
-        password
-      });
-
-      console.log('Login response:', data); // Debug log
-
-      setUser(data.user);
-      return data;
-    } catch (err) {
-      console.error('Login error:', err.response?.data || err.message); // Debug log
-      const errorMessage = err.response?.data?.message || err.message || 'Login failed';
-      setError(errorMessage);
-      return { success: false, message: errorMessage };
-    } finally {
-      setLoading(false);
-    }
+  const login = async (credentials) => {
+    // Mock login
+    const mockUser = {
+      id: '1',
+      name: 'John Doe',
+      email: credentials.email,
+      phone: '+1234567890',
+      binanceApiKey: '',
+      binanceApiSecret: '',
+      twoFactorEnabled: false,
+      notificationsEnabled: true,
+      createdAt: new Date().toISOString()
+    };
+    
+    setUser(mockUser);
+    localStorage.setItem('user', JSON.stringify(mockUser));
+    return { success: true, user: mockUser };
   };
 
   const logout = () => {
     setUser(null);
-    // TODO: Add API call to invalidate session
+    localStorage.removeItem('user');
+  };
+
+  const updateProfile = async (profileData) => {
+    // Mock profile update
+    const updatedUser = {
+      ...user,
+      ...profileData,
+      updatedAt: new Date().toISOString()
+    };
+    
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    return { success: true, user: updatedUser };
   };
 
   const value = {
     user,
     loading,
-    error,
     register,
     login,
     logout,
+    updateProfile
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 }; 
