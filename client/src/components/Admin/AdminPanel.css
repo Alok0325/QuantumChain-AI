@@ -22,7 +22,7 @@
 }
 
 .admin-sidebar {
-  width: 280px;
+  width: 300px;
   background: rgba(16, 16, 16, 0.95);
   backdrop-filter: blur(10px);
   border-right: 1px solid rgba(0, 255, 255, 0.1);
