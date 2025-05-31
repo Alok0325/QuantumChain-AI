@@ -2,18 +2,21 @@
   display: grid;
   grid-template-columns: 250px 1fr 300px;
   grid-template-rows: auto 1fr;
-  gap: 1rem;
-  padding: 1rem;
-  height: calc(100vh - 80px);
+  gap: 20px;
+  padding: 20px;
+ 
+  background: #1a1a1a;
   color: #fff;
 }
 
+/* Trading Pairs Section */
 .trading-pairs {
-  grid-row: 1 / -1;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 15px;
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  background: #242424;
+  border-radius: 10px;
+  padding: 15px;
+  overflow-y: auto;
 }
 
 .trading-pairs h3 {
@@ -25,59 +28,69 @@
 .pairs-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 10px;
 }
 
 .pair-item {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
   align-items: center;
-  padding: 0.75rem;
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.02);
+  transition: background-color 0.2s;
 }
 
 .pair-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: #2f2f2f;
 }
 
 .pair-item.selected {
-  background: rgba(0, 255, 255, 0.1);
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: #2f2f2f;
+  border: 1px solid #3a3a3a;
 }
 
 .pair-symbol {
   font-weight: 600;
+  color: #fff;
 }
 
 .pair-price {
-  color: #b3b3b3;
+  color: #ccc;
+  text-align: right;
+}
+
+.pair-change {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-align: right;
 }
 
 .pair-change.positive {
-  color: #00ff88;
+  color: #00c853;
 }
 
 .pair-change.negative {
-  color: #ff4444;
+  color: #ff3d00;
 }
 
+/* Trading Chart Section */
 .trading-chart {
   grid-column: 2;
-  grid-row: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 15px;
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  grid-row: 1 / span 2;
+  background: #242424;
+  border-radius: 10px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 15px;
 }
 
 .chart-header h3 {
@@ -87,74 +100,72 @@
 
 .chart-controls {
   display: flex;
-  gap: 0.5rem;
+  gap: 10px;
 }
 
 .time-button {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #b3b3b3;
+  padding: 5px 15px;
+  background: #2f2f2f;
+  border: none;
+  border-radius: 4px;
+  color: #ccc;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
 
 .time-button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: #3a3a3a;
 }
 
 .time-button.active {
-  background: rgba(0, 255, 255, 0.1);
-  border-color: #00ffff;
-  color: #00ffff;
+  background: #3a3a3a;
+  color: #fff;
 }
 
 .chart-placeholder {
-  height: 300px;
+  flex: 1;
+  background: #1a1a1a;
+  border-radius: 8px;
   position: relative;
   overflow: hidden;
 }
 
 .quantum-chart {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
+  background: #1a1a1a;
 }
 
 .quantum-line {
   position: absolute;
-  top: 50%;
   left: 0;
-  width: 100%;
+  right: 0;
+  top: 50%;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #00ffff, transparent);
-  animation: quantumFlow 3s infinite linear;
+  background: linear-gradient(90deg, transparent, #00c853, transparent);
+  animation: quantumPulse 2s infinite;
 }
 
 .quantum-particles {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at center, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
-  animation: particlePulse 2s infinite ease-in-out;
+  inset: 0;
+  background: radial-gradient(circle at center, #00c85333 0%, transparent 70%);
+  animation: particlePulse 4s infinite;
 }
 
+/* Trading Panel Section */
 .trading-panel {
-  grid-column: 2;
-  grid-row: 2;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .order-book {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 15px;
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #242424;
+  border-radius: 10px;
+  padding: 15px;
 }
 
 .order-book h3 {
@@ -166,165 +177,158 @@
 .order-book-content {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 10px;
+}
+
+.asks, .bids {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .order-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  padding: 0.5rem;
   font-size: 0.9rem;
+  padding: 4px 0;
 }
 
 .order-row.ask {
-  color: #ff4444;
+  color: #ff3d00;
 }
 
 .order-row.bid {
-  color: #00ff88;
+  color: #00c853;
 }
 
 .spread {
   text-align: center;
-  padding: 0.5rem;
-  color: #b3b3b3;
-  font-size: 0.9rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 0;
+  color: #888;
+  border-top: 1px solid #333;
+  border-bottom: 1px solid #333;
 }
 
+/* Order Form */
 .order-form {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 15px;
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #242424;
+  border-radius: 10px;
+  padding: 15px;
 }
 
 .order-tabs {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 10px;
+  margin-bottom: 15px;
 }
 
 .order-tab {
   flex: 1;
-  padding: 0.75rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #b3b3b3;
+  padding: 8px;
+  background: #2f2f2f;
+  border: none;
+  border-radius: 6px;
+  color: #ccc;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
 
 .order-tab:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: #3a3a3a;
 }
 
 .order-tab.active {
-  background: rgba(0, 255, 255, 0.1);
-  border-color: #00ffff;
-  color: #00ffff;
+  background: #3a3a3a;
+  color: #fff;
 }
 
 .order-side {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 10px;
+  margin-bottom: 15px;
 }
 
 .side-button {
   flex: 1;
-  padding: 0.75rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #b3b3b3;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
   cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.side-button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  transition: all 0.2s;
+  background: #2f2f2f;
 }
 
 .side-button.active.buy {
-  background: rgba(0, 255, 136, 0.1);
-  border-color: #00ff88;
-  color: #00ff88;
+  background: #00c853;
 }
 
 .side-button.active.sell {
-  background: rgba(255, 68, 68, 0.1);
-  border-color: #ff4444;
-  color: #ff4444;
+  background: #ff3d00;
 }
 
 .order-inputs {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 15px;
+  margin-bottom: 15px;
 }
 
 .input-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 5px;
 }
 
 .input-group label {
-  color: #b3b3b3;
+  color: #888;
   font-size: 0.9rem;
 }
 
 .input-group input {
-  padding: 0.75rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
   color: #fff;
   font-size: 1rem;
 }
 
 .input-group input:disabled {
-  opacity: 0.5;
+  background: #2f2f2f;
   cursor: not-allowed;
 }
 
 .submit-order {
   width: 100%;
-  padding: 1rem;
-  border-radius: 8px;
+  padding: 12px;
   border: none;
-  font-size: 1rem;
+  border-radius: 6px;
+  color: #fff;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
 
 .submit-order.buy {
-  background: linear-gradient(45deg, #00ff88, #00cc6a);
-  color: #fff;
+  background: #00c853;
 }
 
 .submit-order.sell {
-  background: linear-gradient(45deg, #ff4444, #cc3636);
-  color: #fff;
+  background: #ff3d00;
 }
 
 .submit-order:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+  filter: brightness(1.1);
 }
 
+/* Recent Trades Section */
 .recent-trades {
-  grid-column: 3;
-  grid-row: 1 / -1;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 15px;
-  padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #242424;
+  border-radius: 10px;
+  padding: 15px;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .recent-trades h3 {
@@ -336,42 +340,78 @@
 .trades-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 5px;
 }
 
 .trade-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  padding: 0.5rem;
   font-size: 0.9rem;
+  padding: 4px 0;
 }
 
-.trade-row.buy {
-  color: #00ff88;
+.trade-row.buy .trade-price {
+  color: #00c853;
 }
 
-.trade-row.sell {
-  color: #ff4444;
+.trade-row.sell .trade-price {
+  color: #ff3d00;
 }
 
-@keyframes quantumFlow {
+.trade-time {
+  color: #888;
+  text-align: right;
+}
+
+@keyframes quantumPulse {
   0% {
-    transform: translateX(-100%);
+    opacity: 0.3;
+    transform: scaleX(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1.2);
   }
   100% {
-    transform: translateX(100%);
+    opacity: 0.3;
+    transform: scaleX(0.8);
   }
 }
 
 @keyframes particlePulse {
-  0%, 100% {
-    opacity: 0.5;
+  0% {
+    opacity: 0.2;
+    transform: scale(0.8);
   }
   50% {
-    opacity: 1;
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0.2;
+    transform: scale(0.8);
   }
 }
 
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+/* Responsive Design */
 @media (max-width: 1200px) {
   .spot-trade-container {
     grid-template-columns: 200px 1fr 250px;
@@ -381,27 +421,22 @@
 @media (max-width: 992px) {
   .spot-trade-container {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: auto auto auto;
     height: auto;
   }
 
-  .trading-pairs {
+  .trading-pairs,
+  .trading-chart,
+  .trading-panel {
     grid-column: 1;
-    grid-row: 1;
+    grid-row: auto;
+  }
+
+  .trading-pairs {
+    max-height: 300px;
   }
 
   .trading-chart {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .trading-panel {
-    grid-column: 1;
-    grid-row: 3;
-  }
-
-  .recent-trades {
-    grid-column: 1;
-    grid-row: 4;
+    height: 400px;
   }
 } 

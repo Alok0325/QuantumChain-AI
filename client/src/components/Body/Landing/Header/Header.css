@@ -101,38 +101,45 @@
 /* Profile Dropdown Styles */
 .profile-dropdown {
   position: relative;
+  margin-left: 1rem;
+  z-index: 1001;
 }
 
 .profile-button {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: transparent;
-  border: none;
+  padding: 0.5rem 0.75rem;
+  background: rgba(16, 16, 16, 0.9);
+  border: 1px solid rgba(0, 255, 255, 0.15);
+  border-radius: 8px;
   color: #fff;
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .profile-button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 255, 255, 0.1);
+  border-color: rgba(0, 255, 255, 0.3);
 }
 
 .profile-avatar {
   width: 32px;
   height: 32px;
-  background: linear-gradient(45deg, #00ff00, #00cc00);
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: #000;
+  overflow: hidden;
+  border: 2px solid #00ffff;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .profile-name {
+  font-size: 0.9rem;
   font-weight: 500;
 }
 
@@ -154,69 +161,63 @@
 
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 0.5rem);
+  top: calc(100% + 0.75rem);
   right: 0;
-  width: 280px;
-  background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 1rem;
+  width: 200px;
+  background: rgba(16, 16, 16, 0.98);
+  border: 1px solid rgba(0, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.75rem 0.5rem;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  pointer-events: none;
 }
 
 .dropdown-menu.show {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+  pointer-events: auto;
 }
 
 .dropdown-header {
-  padding: 0.5rem 0;
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .user-info {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.user-avatar {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(45deg, #00ff00, #00cc00);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 1.2rem;
-  color: #000;
-}
-
-.user-details {
-  display: flex;
   flex-direction: column;
+  gap: 0.5rem;
 }
 
 .user-name {
+  font-size: 0.95rem;
   font-weight: 600;
   color: #fff;
 }
 
-.user-email {
-  font-size: 0.9rem;
-  color: #888;
+.user-status {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: #00ff88;
+}
+
+.user-status i {
+  font-size: 0.5rem;
 }
 
 .dropdown-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  margin: 0.75rem 0;
+  background: rgba(0, 255, 255, 0.15);
+  margin: 0.5rem 0;
 }
 
 .dropdown-item {
@@ -226,26 +227,35 @@
   padding: 0.75rem;
   color: #fff;
   text-decoration: none;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  width: 100%;
-  text-align: left;
-  font-size: 0.95rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0.25rem 0;
+}
+
+.dropdown-item i {
+  font-size: 0.9rem;
+  color: #00ffff;
+  width: 16px;
+  text-align: center;
 }
 
 .dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 255, 255, 0.1);
 }
 
 .dropdown-item.logout {
-  color: #ff4444;
+  color: #ff3b30;
 }
 
 .dropdown-item.logout:hover {
-  background: rgba(255, 68, 68, 0.1);
+  background: rgba(255, 59, 48, 0.1);
+}
+
+/* Remove descriptions as they're not needed */
+.dropdown-item .item-description {
+  display: none;
 }
 
 .icon {
@@ -318,7 +328,12 @@
   }
 
   .dropdown-menu {
-    width: calc(100% - 2rem);
-    right: 1rem;
+    width: 180px;
+    right: -1rem;
+    padding: 0.3rem;
+  }
+
+  .profile-name {
+    display: none;
   }
 } 

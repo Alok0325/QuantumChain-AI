@@ -1,111 +1,143 @@
-# QuantumChain AI AI AI - P2P Cryptocurrency Exchange
+# QuantumChain AI - Cryptocurrency Trading Platform
 
-A modern P2P cryptocurrency exchange platform with AI-powered features.
-
-## Features
-
-- User Authentication (Register/Login)
-- KYC Verification System
-- Modern Dashboard with Market Overview
-- Secure File Upload for KYC Documents
-- Responsive Design with Dark Theme
-
-## Tech Stack
-
-- Frontend: React.js
-- Backend: Node.js with Express
-- Database: MySQL
-- Styling: Styled Components
-- Authentication: JWT
-- File Upload: Multer
-
-## Prerequisites
-
-- Node.js (v14 or higher)
-- MySQL (v8.0 or higher)
-- npm or yarn
-
-## Setup Instructions
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd QuantumChain AI AI-ai
-```
-
-2. Set up the database:
-- Create a MySQL database
-- Import the schema from `server/database/schema.sql`
-
-3. Configure environment variables:
-- Create `.env` file in the server directory with the following variables:
-```
-DB_HOST=localhost
-DB_USER=your_mysql_username
-DB_PASSWORD=your_mysql_password
-DB_NAME=QuantumChain AI AI_db
-JWT_SECRET=your_jwt_secret_key
-PORT=5000
-```
-
-4. Install dependencies:
-```bash
-# Install server dependencies
-cd server
-npm install
-
-# Install client dependencies
-cd ../client
-npm install
-```
-
-5. Start the development servers:
-```bash
-# Start the backend server (from server directory)
-npm run dev
-
-# Start the frontend server (from client directory)
-npm start
-```
-
-The application will be available at:
-- Frontend: http://localhost:3000
-- Backend: http://localhost:5000
+A modern cryptocurrency trading platform powered by quantum computing and AI technologies.
 
 ## Project Structure
 
 ```
-QuantumChain AI AI-ai/
-├── client/                 # React frontend
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── context/      # React context
-│   │   └── App.js        # Main App component
-│   └── package.json
-├── server/                # Node.js backend
-│   ├── routes/           # API routes
-│   ├── config/           # Configuration files
-│   ├── database/         # Database schema
-│   └── package.json
-└── README.md
+QuantumChain-AI/
+├── client/                      # Frontend React application
+│   ├── public/                  # Static files
+│   └── src/
+│       ├── components/          # React components
+│       │   ├── Admin/          # Admin dashboard components
+│       │   │   └── DashboardOverview.js
+│       │   ├── Auth/           # Authentication components
+│       │   │   ├── Login.js
+│       │   │   └── Register.js
+│       │   └── Body/
+│       │       └── Landing/
+│       │           ├── Home/    # Home page components
+│       │           │   ├── Home.js
+│       │           │   └── Home.css
+│       │           └── Pages/   # Main application pages
+│       │               ├── About/
+│       │               ├── Market/
+│       │               ├── P2P/
+│       │               ├── Portfolio/
+│       │               ├── Predictions/
+│       │               ├── Profile/
+│       │               └── SpotTrade/
+│       ├── config/             # Configuration files
+│       │   └── routes.js      # Route definitions
+│       ├── context/           # React context providers
+│       ├── hooks/            # Custom React hooks
+│       ├── services/         # API services
+│       ├── utils/            # Utility functions
+│       ├── App.js           # Root component
+│       └── index.js         # Entry point
+│
+└── server/                   # Backend Node.js application
+    ├── config/              # Server configuration
+    ├── controllers/         # Request handlers
+    ├── middleware/          # Express middleware
+    ├── models/             # Database models
+    ├── routes/             # API routes
+    ├── services/           # Business logic
+    └── app.js             # Server entry point
+
 ```
 
-## Security Features
+## Key Features
 
-- Password hashing with bcrypt
-- JWT-based authentication
-- Secure file upload handling
-- Protected routes
-- Input validation
+1. **User Authentication**
+   - Secure login and registration
+   - JWT-based authentication
+   - Two-factor authentication
+
+2. **Trading Features**
+   - Spot trading
+   - P2P trading
+   - Portfolio management
+   - Market analysis
+   - AI-powered predictions
+
+3. **Admin Dashboard**
+   - User management
+   - Transaction monitoring
+   - KYC verification
+   - System analytics
+
+4. **Security Features**
+   - Quantum-resistant encryption
+   - Secure wallet management
+   - Advanced fraud detection
+
+## Technology Stack
+
+- **Frontend:**
+  - React.js
+  - Chart.js for analytics
+  - WebSocket for real-time data
+  - CSS3 with modern animations
+
+- **Backend:**
+  - Node.js
+  - Express.js
+  - MongoDB
+  - WebSocket server
+
+- **Security:**
+  - JWT authentication
+  - Quantum encryption
+  - SSL/TLS
+
+## Getting Started
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/QuantumChain-AI.git
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   # Install client dependencies
+   cd client
+   npm install
+
+   # Install server dependencies
+   cd ../server
+   npm install
+   ```
+
+3. **Set up environment variables:**
+   - Create `.env` file in server directory
+   - Create `.env` file in client directory
+
+4. **Run the application:**
+   ```bash
+   # Run client (development)
+   cd client
+   npm start
+
+   # Run server (development)
+   cd server
+   npm run dev
+   ```
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contact
+
+Your Name - your.email@example.com
+Project Link: [https://github.com/yourusername/QuantumChain-AI](https://github.com/yourusername/QuantumChain-AI) 

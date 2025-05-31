@@ -64,41 +64,38 @@ const Header = () => {
             <div className="profile-dropdown" ref={profileRef}>
               <button className="profile-button" onClick={toggleProfile}>
                 <div className="profile-avatar">
-                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  <img 
+                    src={user.profileImage || `https://ui-avatars.com/api/?name=${user.name}&background=0D8ABC&color=fff&size=32`} 
+                    alt={user.name}
+                    className="avatar-image"
+                  />
                 </div>
                 <span className="profile-name">{user.name || 'User'}</span>
-                <i className={`dropdown-arrow ${isProfileOpen ? 'up' : 'down'}`}></i>
+                <i className={`fas fa-chevron-${isProfileOpen ? 'up' : 'down'}`}></i>
               </button>
               
               <div className={`dropdown-menu ${isProfileOpen ? 'show' : ''}`}>
                 <div className="dropdown-header">
                   <div className="user-info">
-                    <div className="user-avatar">
-                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                    <div className="user-details">
-                      <span className="user-name">{user.name || 'User'}</span>
-                      <span className="user-email">{user.email}</span>
-                    </div>
+                    <span className="user-name">{user.name || 'User'}</span>
+                    <span className="user-status">
+                      <i className="fas fa-circle"></i> Online
+                    </span>
                   </div>
                 </div>
                 
-                <div className="dropdown-divider"></div>
-                
                 <Link to="/portfolio" className="dropdown-item">
-                  <i className="icon portfolio-icon"></i>
+                  <i className="fas fa-chart-line"></i>
                   Portfolio
                 </Link>
                 
                 <Link to="/profile" className="dropdown-item">
-                  <i className="icon settings-icon"></i>
+                  <i className="fas fa-user-circle"></i>
                   Profile Settings
                 </Link>
                 
-                <div className="dropdown-divider"></div>
-                
                 <button onClick={handleLogout} className="dropdown-item logout">
-                  <i className="icon logout-icon"></i>
+                  <i className="fas fa-sign-out-alt"></i>
                   Logout
                 </button>
               </div>

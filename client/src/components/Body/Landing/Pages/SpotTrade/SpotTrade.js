@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createChart } from 'lightweight-charts';
 import './SpotTrade.css';
 
 const SpotTrade = () => {
@@ -7,6 +8,12 @@ const SpotTrade = () => {
   const [side, setSide] = useState('buy');
   const [price, setPrice] = useState('');
   const [amount, setAmount] = useState('');
+  const [timeframe, setTimeframe] = useState('1h');
+  const chartContainerRef = useRef(null);
+  const chartRef = useRef(null);
+  const candlestickSeriesRef = useRef(null);
+  const volumeSeriesRef = useRef(null);
+  const wsRef = useRef(null);
 
   const tradingPairs = [
     { symbol: 'BTC/USDT', price: '43,521.23', change: '+2.34%' },
@@ -34,6 +41,187 @@ const SpotTrade = () => {
     { price: '43,519.50', amount: '0.3456', time: '12:34:54', side: 'buy' },
   ];
 
+  // Function to fetch historical klines (candlestick) data
+  const fetchHistoricalData = async (symbol, interval) => {
+    try {
+      const response = await fetch(
+        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=1000`
+      );
+      const data = await response.json();
+      
+      const candleData = data.map(d => ({
+        time: d[0] / 1000,
+        open: parseFloat(d[1]),
+        high: parseFloat(d[2]),
+        low: parseFloat(d[3]),
+        close: parseFloat(d[4])
+      }));
+
+      const volumeData = data.map(d => ({
+        time: d[0] / 1000,
+        value: parseFloat(d[5]),
+        color: parseFloat(d[4]) >= parseFloat(d[1]) ? '#00c85333' : '#ff3d0033'
+      }));
+
+      return { candleData, volumeData };
+    } catch (error) {
+      console.error('Error fetching historical data:', error);
+      return { candleData: [], volumeData: [] };
+    }
+  };
+
+  // Function to get interval for Binance API
+  const getInterval = (timeframe) => {
+    const intervals = {
+      '1m': '1m',
+      '5m': '5m',
+      '15m': '15m',
+      '1h': '1h',
+      '4h': '4h',
+      '1d': '1d',
+      '1w': '1w'
+    };
+    return intervals[timeframe] || '1h';
+  };
+
+  // Initialize WebSocket connection
+  const initializeWebSocket = (symbol) => {
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+
+    const formattedSymbol = symbol.replace('/', '').toLowerCase();
+    const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${formattedSymbol}@kline_${getInterval(timeframe)}`);
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.k) {
+        const { t: time, o: open, h: high, l: low, c: close, v: volume } = data.k;
+
+        const candleData = {
+          time: time / 1000,
+          open: parseFloat(open),
+          high: parseFloat(high),
+          low: parseFloat(low),
+          close: parseFloat(close)
+        };
+
+        const volumeData = {
+          time: time / 1000,
+          value: parseFloat(volume),
+          color: parseFloat(close) >= parseFloat(open) ? '#00c85333' : '#ff3d0033'
+        };
+
+        candlestickSeriesRef.current?.update(candleData);
+        volumeSeriesRef.current?.update(volumeData);
+      }
+    };
+
+    wsRef.current = ws;
+  };
+
+  // Initialize chart
+  useEffect(() => {
+    if (chartContainerRef.current) {
+      const chart = createChart(chartContainerRef.current, {
+        layout: {
+          background: { color: '#1a1a1a' },
+          textColor: '#d1d4dc',
+        },
+        grid: {
+          vertLines: { color: '#242424' },
+          horzLines: { color: '#242424' },
+        },
+        crosshair: {
+          mode: 0,
+          vertLine: {
+            width: 1,
+            color: '#00ffff',
+            style: 0,
+          },
+          horzLine: {
+            width: 1,
+            color: '#00ffff',
+            style: 0,
+          },
+        },
+        rightPriceScale: {
+          borderColor: '#242424',
+          scaleMargins: {
+            top: 0.1,
+            bottom: 0.2,
+          },
+        },
+        timeScale: {
+          borderColor: '#242424',
+          timeVisible: true,
+          secondsVisible: false,
+        },
+        width: chartContainerRef.current.clientWidth,
+        height: 400,
+      });
+
+      const candlestickSeries = chart.addCandlestickSeries({
+        upColor: '#00c853',
+        downColor: '#ff3d00',
+        borderVisible: false,
+        wickUpColor: '#00c853',
+        wickDownColor: '#ff3d00',
+      });
+
+      const volumeSeries = chart.addHistogramSeries({
+        color: '#26a69a',
+        priceFormat: {
+          type: 'volume',
+        },
+        priceScaleId: '',
+        scaleMargins: {
+          top: 0.8,
+          bottom: 0,
+        },
+      });
+
+      candlestickSeriesRef.current = candlestickSeries;
+      volumeSeriesRef.current = volumeSeries;
+      chartRef.current = chart;
+
+      // Handle resize
+      const handleResize = () => {
+        chart.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      };
+
+      window.addEventListener('resize', handleResize);
+
+      // Initial data load
+      const symbol = selectedPair.replace('/', '');
+      fetchHistoricalData(symbol, getInterval(timeframe)).then(({ candleData, volumeData }) => {
+        candlestickSeries.setData(candleData);
+        volumeSeries.setData(volumeData);
+      });
+      initializeWebSocket(symbol);
+
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        if (wsRef.current) {
+          wsRef.current.close();
+        }
+        chart.remove();
+      };
+    }
+  }, []);
+
+  // Handle pair and timeframe changes
+  useEffect(() => {
+    const symbol = selectedPair.replace('/', '');
+    fetchHistoricalData(symbol, getInterval(timeframe)).then(({ candleData, volumeData }) => {
+      candlestickSeriesRef.current?.setData(candleData);
+      volumeSeriesRef.current?.setData(volumeData);
+    });
+    initializeWebSocket(symbol);
+  }, [selectedPair, timeframe]);
+
   return (
     <div className="spot-trade-container">
       <div className="trading-pairs">
@@ -59,18 +247,45 @@ const SpotTrade = () => {
         <div className="chart-header">
           <h3>{selectedPair} Chart</h3>
           <div className="chart-controls">
-            <button className="time-button active">1H</button>
-            <button className="time-button">4H</button>
-            <button className="time-button">1D</button>
-            <button className="time-button">1W</button>
+            <button 
+              className={`time-button ${timeframe === '1m' ? 'active' : ''}`}
+              onClick={() => setTimeframe('1m')}
+            >
+              1M
+            </button>
+            <button 
+              className={`time-button ${timeframe === '5m' ? 'active' : ''}`}
+              onClick={() => setTimeframe('5m')}
+            >
+              5M
+            </button>
+            <button 
+              className={`time-button ${timeframe === '15m' ? 'active' : ''}`}
+              onClick={() => setTimeframe('15m')}
+            >
+              15M
+            </button>
+            <button 
+              className={`time-button ${timeframe === '1h' ? 'active' : ''}`}
+              onClick={() => setTimeframe('1h')}
+            >
+              1H
+            </button>
+            <button 
+              className={`time-button ${timeframe === '4h' ? 'active' : ''}`}
+              onClick={() => setTimeframe('4h')}
+            >
+              4H
+            </button>
+            <button 
+              className={`time-button ${timeframe === '1d' ? 'active' : ''}`}
+              onClick={() => setTimeframe('1d')}
+            >
+              1D
+            </button>
           </div>
         </div>
-        <div className="chart-placeholder">
-          <div className="quantum-chart">
-            <div className="quantum-line"></div>
-            <div className="quantum-particles"></div>
-          </div>
-        </div>
+        <div className="chart-container" ref={chartContainerRef}></div>
       </div>
 
       <div className="trading-panel">
@@ -167,18 +382,18 @@ const SpotTrade = () => {
             {side === 'buy' ? 'Buy' : 'Sell'} {selectedPair.split('/')[0]}
           </button>
         </div>
-      </div>
 
-      <div className="recent-trades">
-        <h3>Recent Trades</h3>
-        <div className="trades-list">
-          {recentTrades.map((trade, index) => (
-            <div key={index} className={`trade-row ${trade.side}`}>
-              <span className="trade-price">{trade.price}</span>
-              <span className="trade-amount">{trade.amount}</span>
-              <span className="trade-time">{trade.time}</span>
-            </div>
-          ))}
+        <div className="recent-trades">
+          <h3>Recent Trades</h3>
+          <div className="trades-list">
+            {recentTrades.map((trade, index) => (
+              <div key={index} className={`trade-row ${trade.side}`}>
+                <span className="trade-price">{trade.price}</span>
+                <span className="trade-amount">{trade.amount}</span>
+                <span className="trade-time">{trade.time}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

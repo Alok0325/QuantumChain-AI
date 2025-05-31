@@ -4,6 +4,8 @@ import './Predictions.css';
 const Predictions = () => {
   const [selectedCrypto, setSelectedCrypto] = useState('BTC');
   const [timeframe, setTimeframe] = useState('24h');
+  const [isAutoTradeEnabled, setIsAutoTradeEnabled] = useState(false);
+  const [autoTradeStatus, setAutoTradeStatus] = useState('Inactive');
 
   const cryptocurrencies = [
     { symbol: 'BTC', name: 'Bitcoin', price: '$43,521.23', change: '+2.34%' },
@@ -89,13 +91,32 @@ const Predictions = () => {
     },
   ];
 
+  const toggleAutoTrade = () => {
+    setIsAutoTradeEnabled(!isAutoTradeEnabled);
+    setAutoTradeStatus(prev => prev === 'Inactive' ? 'Active - AI Trading' : 'Inactive');
+  };
+
   return (
     <div className="predictions-container">
       <div className="predictions-header">
-        <h1>Quantum-Powered Price Predictions</h1>
-        <p className="subtitle">
-          Leveraging advanced quantum computing and AI to provide accurate cryptocurrency price predictions
-        </p>
+        <div className="header-content">
+          <h1>Quantum-Powered Price Predictions</h1>
+          <p className="subtitle">
+            Leveraging advanced quantum computing and AI to provide accurate cryptocurrency price predictions
+          </p>
+        </div>
+        <div className="auto-trade-section">
+          <div className="auto-trade-status">
+            <span className={`status-indicator ${isAutoTradeEnabled ? 'active' : 'inactive'}`}></span>
+            <span className="status-text">{autoTradeStatus}</span>
+          </div>
+          <button 
+            className={`auto-trade-toggle ${isAutoTradeEnabled ? 'enabled' : ''}`}
+            onClick={toggleAutoTrade}
+          >
+            {isAutoTradeEnabled ? 'Disable AI Auto-Trade' : 'Enable AI Auto-Trade'}
+          </button>
+        </div>
       </div>
 
       <div className="crypto-selector">

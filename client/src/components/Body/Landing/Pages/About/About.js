@@ -1,7 +1,123 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './About.css';
 
+const CareerFormModal = ({ isOpen, onClose }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    position: '',
+    experience: '',
+    resume: null,
+    coverLetter: ''
+  });
+
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: files ? files[0] : value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Handle form submission here
+    console.log('Form submitted:', formData);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="career-modal">
+        <button className="close-button" onClick={onClose}>×</button>
+        <h2>Join Our Team</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="name">Full Name</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="position">Desired Position</label>
+            <select
+              id="position"
+              name="position"
+              value={formData.position}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select a position</option>
+              <option value="frontend">Frontend Developer</option>
+              <option value="backend">Backend Developer</option>
+              <option value="fullstack">Full Stack Developer</option>
+              <option value="ui-ux">UI/UX Designer</option>
+              <option value="blockchain">Blockchain Developer</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label htmlFor="experience">Years of Experience</label>
+            <input
+              type="number"
+              id="experience"
+              name="experience"
+              min="0"
+              max="50"
+              value={formData.experience}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="resume">Resume (PDF)</label>
+            <input
+              type="file"
+              id="resume"
+              name="resume"
+              accept=".pdf"
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="coverLetter">Cover Letter</label>
+            <textarea
+              id="coverLetter"
+              name="coverLetter"
+              value={formData.coverLetter}
+              onChange={handleChange}
+              rows="4"
+              required
+            ></textarea>
+          </div>
+          <button type="submit" className="submit-button">Submit Application</button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const About = () => {
+  const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
+  
   const features = [
     {
       title: 'Quantum-Powered Trading',
@@ -27,22 +143,28 @@ const About = () => {
 
   const team = [
     {
-      name: 'Dr. Sarah Chen',
-      role: 'Chief Quantum Scientist',
-      bio: 'PhD in Quantum Computing with 15+ years of experience in quantum algorithms and financial modeling.',
-      image: 'https://randomuser.me/api/portraits/women/1.jpg'
+      name: 'Alok Prajapati',
+      role: 'Team Leader',
+      bio: 'Full Stack Developer and AI Specialist with expertise in building scalable applications and implementing AI solutions. Leading the team in developing innovative blockchain and AI-powered features.',
+      image: '/images/team/Alok.jpeg'
     },
     {
-      name: 'Michael Rodriguez',
-      role: 'Head of AI Development',
-      bio: 'Expert in machine learning and neural networks, specializing in financial market prediction.',
-      image: 'https://randomuser.me/api/portraits/men/1.jpg'
+      name: 'Saurabh Shukla',
+      role: 'Database Specialist',
+      bio: 'Expert in database architecture and optimization, ensuring robust and efficient data management for the platform. Specializes in blockchain data structures and distributed systems.',
+      image: '/images/team/Saurabh.jpeg'
     },
     {
-      name: 'Dr. James Wilson',
-      role: 'Blockchain Architect',
-      bio: 'Blockchain pioneer with extensive experience in developing secure trading platforms.',
-      image: 'https://randomuser.me/api/portraits/men/2.jpg'
+      name: 'Abhishek Kumar',
+      role: 'Frontend Developer',
+      bio: 'Skilled Frontend Developer with focus on creating intuitive and responsive user interfaces. Expertise in modern JavaScript frameworks and UI/UX best practices.',
+      image: '/images/team/Abhi.jpeg'
+    },
+    {
+      name: 'Abhishek Kumar Maurya',
+      role: 'UI/UX Developer',
+      bio: 'Creative UI/UX Developer dedicated to crafting beautiful and user-friendly interfaces. Specializes in modern design patterns and interactive user experiences.',
+      image: '/images/team/Maurya.jpeg'
     }
   ];
 
@@ -106,7 +228,11 @@ const About = () => {
       </section>
 
       <section className="about-team">
-        <h2>Our Team</h2>
+        <h2>Meet Our Team</h2>
+        <p className="team-intro">
+          Our talented team of developers and specialists work together to bring you the most advanced
+          crypto trading platform.
+        </p>
         <div className="team-grid">
           {team.map((member, index) => (
             <div key={index} className="team-card">
@@ -116,6 +242,14 @@ const About = () => {
               <h3>{member.name}</h3>
               <span className="team-role">{member.role}</span>
               <p>{member.bio}</p>
+              <div className="team-social">
+                <a href="#" className="social-link github" title="GitHub">
+                  <i className="fab fa-github"></i>
+                </a>
+                <a href="#" className="social-link linkedin" title="LinkedIn">
+                  <i className="fab fa-linkedin"></i>
+                </a>
+              </div>
             </div>
           ))}
         </div>
@@ -128,10 +262,20 @@ const About = () => {
           Start your journey today and be part of the quantum trading revolution.
         </p>
         <div className="cta-buttons">
-          <button className="cta-button primary">Get Started</button>
+          <button 
+            className="cta-button primary"
+            onClick={() => setIsCareerModalOpen(true)}
+          >
+            Get Started
+          </button>
           <button className="cta-button secondary">Learn More</button>
         </div>
       </section>
+
+      <CareerFormModal 
+        isOpen={isCareerModalOpen} 
+        onClose={() => setIsCareerModalOpen(false)} 
+      />
     </div>
   );
 };

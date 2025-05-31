@@ -5,29 +5,48 @@
 .connect-button {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: rgba(242, 169, 0, 0.1);
-  border: 1px solid rgba(242, 169, 0, 0.3);
-  color: #f2a900;
-  border-radius: 8px;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #F3BA2F 0%, #F0B90B 100%);
+  border: none;
+  border-radius: 12px;
+  color: #000;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(243, 186, 47, 0.2);
 }
 
-.connect-button:hover:not(:disabled) {
-  background: rgba(242, 169, 0, 0.2);
-  border-color: #f2a900;
+.connect-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(243, 186, 47, 0.3);
 }
 
 .connect-button:disabled {
-  opacity: 0.7;
+  background: linear-gradient(135deg, #d4a429 0%, #d1a20a 100%);
   cursor: not-allowed;
+  transform: none;
 }
 
-.connect-button img {
-  width: 24px;
-  height: 24px;
+.binance-icon {
+  font-size: 1.5rem;
+  background: #000;
+  color: #F3BA2F;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.connect-text {
+  font-family: 'Arial', sans-serif;
+  letter-spacing: 0.5px;
 }
 
 .binance-connected {

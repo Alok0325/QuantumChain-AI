@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import binanceService from '../../../../../services/binanceService';
+import React, { useState } from 'react';
 import './BinanceIntegration.css';
 
 const BinanceIntegration = ({ onTransaction }) => {
@@ -11,45 +10,49 @@ const BinanceIntegration = ({ onTransaction }) => {
     amount: '',
     price: ''
   });
-  const [accountInfo, setAccountInfo] = useState(null);
-  const [recentTrades, setRecentTrades] = useState([]);
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (isConnected) {
-      fetchAccountInfo();
-      fetchRecentTrades();
-    }
-  }, [isConnected]);
-
-  const fetchAccountInfo = async () => {
-    try {
-      setLoading(true);
-      const info = await binanceService.getAccountInfo();
-      setAccountInfo(info);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch account information');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  // Dummy account data
+  const dummyAccountInfo = {
+    balances: [
+      { asset: 'BTC', free: '2.5643', locked: '0.1000' },
+      { asset: 'ETH', free: '15.234', locked: '0.500' },
+      { asset: 'SOL', free: '234.567', locked: '10.000' },
+      { asset: 'USDT', free: '25678.90', locked: '1000.00' }
+    ]
   };
 
-  const fetchRecentTrades = async () => {
-    try {
-      const trades = await binanceService.getRecentTrades('BTCUSDT');
-      setRecentTrades(trades);
-    } catch (err) {
-      console.error('Error fetching recent trades:', err);
+  // Dummy recent trades
+  const dummyRecentTrades = [
+    {
+      symbol: 'BTCUSDT',
+      price: '35678.90',
+      qty: '0.5432',
+      time: Date.now() - 3600000,
+      isBuyer: true
+    },
+    {
+      symbol: 'ETHUSDT',
+      price: '2890.12',
+      qty: '3.456',
+      time: Date.now() - 7200000,
+      isBuyer: false
+    },
+    {
+      symbol: 'SOLUSDT',
+      price: '89.32',
+      qty: '45.678',
+      time: Date.now() - 10800000,
+      isBuyer: true
     }
-  };
+  ];
 
   const handleConnect = async () => {
     try {
       setLoading(true);
-      await fetchAccountInfo();
+      // Simulate API connection delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
       setIsConnected(true);
       setError(null);
     } catch (err) {
@@ -62,21 +65,14 @@ const BinanceIntegration = ({ onTransaction }) => {
 
   const handleDisconnect = () => {
     setIsConnected(false);
-    setAccountInfo(null);
-    setRecentTrades([]);
   };
 
   const handleTransactionSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
-      const order = await binanceService.createOrder(
-        transactionData.symbol,
-        transactionType.toUpperCase(),
-        'LIMIT',
-        transactionData.amount,
-        transactionData.price
-      );
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       if (onTransaction) {
         onTransaction({
@@ -85,15 +81,12 @@ const BinanceIntegration = ({ onTransaction }) => {
           amount: parseFloat(transactionData.amount),
           price: parseFloat(transactionData.price),
           total: parseFloat(transactionData.amount) * parseFloat(transactionData.price),
-          date: new Date().toISOString(),
-          orderId: order.orderId
+          date: new Date().toISOString()
         });
       }
 
       setShowTransactionModal(false);
       setTransactionData({ symbol: '', amount: '', price: '' });
-      fetchAccountInfo();
-      fetchRecentTrades();
     } catch (err) {
       setError('Failed to execute transaction');
       console.error(err);
@@ -110,8 +103,10 @@ const BinanceIntegration = ({ onTransaction }) => {
           onClick={handleConnect}
           disabled={loading}
         >
-          <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" alt="Binance" />
-          {loading ? 'Connecting...' : 'Connect Binance'}
+          <span className="binance-icon">₿</span>
+          <span className="connect-text">
+            {loading ? 'Connecting...' : 'Connect Binance'}
+          </span>
         </button>
       ) : (
         <div className="binance-connected">
@@ -120,22 +115,18 @@ const BinanceIntegration = ({ onTransaction }) => {
             Connected to Binance
           </div>
           
-          {accountInfo && (
-            <div className="account-summary">
-              <h4>Account Summary</h4>
-              <div className="balance-list">
-                {accountInfo.balances
-                  .filter(balance => parseFloat(balance.free) > 0 || parseFloat(balance.locked) > 0)
-                  .map(balance => (
-                    <div key={balance.asset} className="balance-item">
-                      <span className="asset">{balance.asset}</span>
-                      <span className="amount">Free: {balance.free}</span>
-                      <span className="amount">Locked: {balance.locked}</span>
-                    </div>
-                  ))}
-              </div>
+          <div className="account-summary">
+            <h4>Account Summary</h4>
+            <div className="balance-list">
+              {dummyAccountInfo.balances.map(balance => (
+                <div key={balance.asset} className="balance-item">
+                  <span className="asset">{balance.asset}</span>
+                  <span className="amount">Free: {balance.free}</span>
+                  <span className="amount">Locked: {balance.locked}</span>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
 
           <div className="binance-actions">
             <button 
@@ -167,23 +158,21 @@ const BinanceIntegration = ({ onTransaction }) => {
             </button>
           </div>
 
-          {recentTrades.length > 0 && (
-            <div className="recent-trades">
-              <h4>Recent Trades</h4>
-              <div className="trades-list">
-                {recentTrades.slice(0, 5).map((trade, index) => (
-                  <div key={index} className="trade-item">
-                    <span className={`side ${trade.isBuyer ? 'buy' : 'sell'}`}>
-                      {trade.isBuyer ? 'BUY' : 'SELL'}
-                    </span>
-                    <span className="amount">{trade.qty} {trade.symbol}</span>
-                    <span className="price">${trade.price}</span>
-                    <span className="time">{new Date(trade.time).toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
+          <div className="recent-trades">
+            <h4>Recent Trades</h4>
+            <div className="trades-list">
+              {dummyRecentTrades.map((trade, index) => (
+                <div key={index} className="trade-item">
+                  <span className={`side ${trade.isBuyer ? 'buy' : 'sell'}`}>
+                    {trade.isBuyer ? 'BUY' : 'SELL'}
+                  </span>
+                  <span className="amount">{trade.qty} {trade.symbol}</span>
+                  <span className="price">${trade.price}</span>
+                  <span className="time">{new Date(trade.time).toLocaleString()}</span>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       )}
 

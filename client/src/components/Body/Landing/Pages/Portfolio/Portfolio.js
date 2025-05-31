@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useBinance } from '../../../../../context/BinanceContext';
+import React, { useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -29,13 +28,108 @@ ChartJS.register(
 
 const Portfolio = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  const { portfolioData, loading, error, timeRange, setTimeRange, refreshData } = useBinance();
+  const [timeRange, setTimeRange] = useState('1D');
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Dummy portfolio data
+  const portfolioData = {
+    totalValue: 158432.67,
+    change24h: 5.34,
+    totalPnl: 23567.89,
+    totalPnlPercentage: 17.45,
+    availableBalance: 25678.90,
+    holdings: [
+      {
+        symbol: 'BTC',
+        name: 'Bitcoin',
+        amount: '2.5643',
+        value: 89765.43,
+        avgBuyPrice: 32450.21,
+        pnl: 12543.67,
+        pnlPercentage: 15.67,
+        change24h: 4.32,
+        allocation: 45.3
+      },
+      {
+        symbol: 'ETH',
+        name: 'Ethereum',
+        amount: '15.234',
+        value: 45678.90,
+        avgBuyPrice: 2789.34,
+        pnl: 8765.43,
+        pnlPercentage: 21.34,
+        change24h: 6.78,
+        allocation: 28.7
+      },
+      {
+        symbol: 'SOL',
+        name: 'Solana',
+        amount: '234.567',
+        value: 23456.78,
+        avgBuyPrice: 87.65,
+        pnl: 3456.78,
+        pnlPercentage: 18.90,
+        change24h: -2.45,
+        allocation: 15.5
+      },
+      {
+        symbol: 'DOT',
+        name: 'Polkadot',
+        amount: '567.89',
+        value: 12345.67,
+        avgBuyPrice: 19.87,
+        pnl: 1234.56,
+        pnlPercentage: 12.34,
+        change24h: 3.21,
+        allocation: 10.5
+      }
+    ],
+    recentTransactions: [
+      {
+        type: 'buy',
+        symbol: 'BTC',
+        amount: '0.5432',
+        price: 35678.90,
+        total: 19378.90,
+        date: '2024-03-20T10:30:00Z'
+      },
+      {
+        type: 'sell',
+        symbol: 'ETH',
+        amount: '3.456',
+        price: 2890.12,
+        total: 9988.25,
+        date: '2024-03-19T15:45:00Z'
+      },
+      {
+        type: 'buy',
+        symbol: 'SOL',
+        amount: '45.678',
+        price: 89.32,
+        total: 4080.00,
+        date: '2024-03-18T09:15:00Z'
+      },
+      {
+        type: 'buy',
+        symbol: 'DOT',
+        amount: '123.45',
+        price: 21.34,
+        total: 2634.43,
+        date: '2024-03-17T14:20:00Z'
+      },
+      {
+        type: 'sell',
+        symbol: 'BTC',
+        amount: '0.2345',
+        price: 36789.10,
+        total: 8627.04,
+        date: '2024-03-16T11:05:00Z'
+      }
+    ]
+  };
 
   // Generate chart data based on timeRange
   const generateChartData = () => {
-    if (!portfolioData) return null;
-
     const now = new Date();
     const data = [];
     const labels = [];
@@ -155,33 +249,15 @@ const Portfolio = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await refreshData();
+    // Replace with actual refresh logic
     setIsRefreshing(false);
   };
 
-  if (loading && !portfolioData) {
+  if (isRefreshing) {
     return (
       <div className="portfolio-loading">
         <div className="loading-spinner"></div>
-        <p>Loading portfolio data...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="portfolio-error">
-        <p>{error}</p>
-        <button onClick={handleRefresh} className="retry-button">Retry</button>
-      </div>
-    );
-  }
-
-  if (!portfolioData) {
-    return (
-      <div className="portfolio-error">
-        <p>Please configure your Binance API keys in your profile to view portfolio data.</p>
-        <a href="/profile" className="retry-button">Go to Profile</a>
+        <p>Refreshing portfolio data...</p>
       </div>
     );
   }
@@ -193,8 +269,8 @@ const Portfolio = () => {
           <h3>Total Portfolio Value</h3>
           <div className="value-display">
             <span className="value">${portfolioData.totalValue.toLocaleString()}</span>
-            <span className={`change ${parseFloat(portfolioData.change24h) >= 0 ? 'positive' : 'negative'}`}>
-              {parseFloat(portfolioData.change24h) >= 0 ? '+' : ''}{portfolioData.change24h}%
+            <span className={`change ${portfolioData.change24h >= 0 ? 'positive' : 'negative'}`}>
+              {portfolioData.change24h >= 0 ? '+' : ''}{portfolioData.change24h}%
             </span>
           </div>
         </div>
@@ -202,8 +278,8 @@ const Portfolio = () => {
           <h3>Total P&L</h3>
           <div className="value-display">
             <span className="value">${portfolioData.totalPnl.toLocaleString()}</span>
-            <span className={`change ${parseFloat(portfolioData.totalPnlPercentage) >= 0 ? 'positive' : 'negative'}`}>
-              {parseFloat(portfolioData.totalPnlPercentage) >= 0 ? '+' : ''}{portfolioData.totalPnlPercentage}%
+            <span className={`change ${portfolioData.totalPnlPercentage >= 0 ? 'positive' : 'negative'}`}>
+              {portfolioData.totalPnlPercentage >= 0 ? '+' : ''}{portfolioData.totalPnlPercentage}%
             </span>
           </div>
         </div>

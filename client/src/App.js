@@ -16,6 +16,7 @@ import Page from './components/Body/Landing/Pages/Page';
 import PrivateRoute from './components/Body/Landing/auth/PrivateRoute';
 import Profile from './components/Body/Landing/Pages/Profile/Profile';
 import { BinanceProvider } from './context/BinanceContext';
+import AdminPanel from './components/Admin/AdminPanel';
 import './App.css';
 
 // Protected route wrapper component
@@ -37,23 +38,30 @@ function App() {
         <PortfolioProvider>
           <Router>
             <div className="app">
-              <Header />
-              <main className="main-content">
-                <Routes>
-                  <Route path="/" element={<RootRoute />} />
-                  <Route path="/" element={<Page />}>
-                    <Route path="market" element={<Market />} />
-                    <Route path="p2p" element={<P2P />} />
-                    <Route path="trade" element={<SpotTrade />} />
-                    <Route path="predictions" element={<Predictions />} />
-                    <Route path="about" element={<About />} />
-                    <Route path="portfolio" element={<ProtectedPortfolio />} />
-                    <Route path="profile" element={<Profile />} />
-                  </Route>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                </Routes>
-              </main>
+              <Routes>
+                <Route path="/admin/*" element={<AdminPanel />} />
+                <Route path="/*" element={
+                  <>
+                    <Header />
+                    <main className="main-content">
+                      <Routes>
+                        <Route path="/" element={<RootRoute />} />
+                        <Route path="/" element={<Page />}>
+                          <Route path="market" element={<Market />} />
+                          <Route path="p2p" element={<P2P />} />
+                          <Route path="trade" element={<SpotTrade />} />
+                          <Route path="predictions" element={<Predictions />} />
+                          <Route path="about" element={<About />} />
+                          <Route path="portfolio" element={<ProtectedPortfolio />} />
+                          <Route path="profile" element={<Profile />} />
+                        </Route>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                      </Routes>
+                    </main>
+                  </>
+                } />
+              </Routes>
             </div>
           </Router>
         </PortfolioProvider>
