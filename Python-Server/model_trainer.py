@@ -98,8 +98,8 @@ class CryptoModelTrainer:
         model.fit(
             X_train, y_train,
             batch_size=32,
-            epochs=5,
-            validation_split=0.2,
+            epochs=50,
+            validation_data=(X_test, y_test),
             callbacks=[early_stopping]
         )
         
@@ -110,30 +110,34 @@ class CryptoModelTrainer:
         print(f"Model for {symbol} trained and saved successfully.")
     
     def predict_next_candlestick(self, symbol):
-        model_dir = f"models/{symbol.lower()}"
-        model_path = f"{model_dir}/model.h5"
-        
-        if not os.path.exists(model_path):
+        try:
+            model_dir = f"models/{symbol.lower()}"
+            model_path = f"{model_dir}/model.h5"
+            
+            if not os.path.exists(model_path):
+                return None
+            
+            # Load model and scaler
+            model = load_model(model_path)
+            self.scaler = np.load(f"{model_dir}/scaler.npy", allow_pickle=True).item()
+            
+            # Get latest data
+            df = self.get_historical_data(symbol, days=5)  # Get just enough data for prediction
+            scaled_data = self.scaler.transform(df[['Open', 'High', 'Low', 'Close']])
+            
+            # Prepare last hours for prediction
+            last_hours = scaled_data[-self.hours_range:]
+            last_hours = np.expand_dims(last_hours, axis=0)
+            
+            # Make prediction
+            scaled_prediction = model.predict(last_hours)
+            prediction = self.scaler.inverse_transform(scaled_prediction)
+            
+            return prediction[0]  # Return first prediction
+        except Exception as e:
+            print(f"Error making prediction: {str(e)}")
             return None
-        
-        # Load model and scaler
-        model = load_model(model_path)
-        self.scaler = np.load(f"{model_dir}/scaler.npy", allow_pickle=True).item()
-        
-        # Get latest data
-        df = self.get_historical_data(symbol, days=5)  # Get just enough data for prediction
-        scaled_data = self.scaler.transform(df[['Open', 'High', 'Low', 'Close']])
-        
-        # Prepare last hours for prediction
-        last_hours = scaled_data[-self.hours_range:]
-        last_hours = np.expand_dims(last_hours, axis=0)
-        
-        # Make prediction
-        scaled_prediction = model.predict(last_hours)
-        prediction = self.scaler.inverse_transform(scaled_prediction)
-        
-        return prediction[0]  # Return first prediction
 
 if __name__ == "__main__":
     trainer = CryptoModelTrainer()
-    trainer.train_and_save_model("ATOM") 
+    trainer.train_and_save_model("ATOM")

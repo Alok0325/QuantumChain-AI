@@ -1,4 +1,222 @@
 .predictions-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #fff;
+}
+
+.error-message {
+  background-color: #ff5757;
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.crypto-selector {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.crypto-selector select {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  margin-right: 1rem;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.crypto-selector button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.crypto-selector button:hover {
+  background-color: #45a049;
+}
+
+.crypto-selector button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.prediction-details {
+  margin-bottom: 2rem;
+}
+
+.prediction-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.prediction-card {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.prediction-card h4 {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.prediction-card p {
+  margin: 0.5rem 0 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.auto-trade-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.auto-trade-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Switch styling */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+.market-factors {
+  margin-bottom: 2rem;
+}
+
+.factors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.factor-card {
+  padding: 1.5rem;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.factor-card.positive {
+  border-left: 4px solid #4CAF50;
+}
+
+.factor-card.neutral {
+  border-left: 4px solid #FFC107;
+}
+
+.factor-card.negative {
+  border-left: 4px solid #ff5757;
+}
+
+.factor-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0.5rem 0;
+  color: #2c3e50;
+}
+
+.recent-predictions {
+  margin-top: 2rem;
+}
+
+.recent-predictions table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.recent-predictions th,
+.recent-predictions td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.recent-predictions th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #666;
+}
+
+.recent-predictions tr:hover {
+  background-color: #f8f9fa;
+}
+
+.predictions-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
@@ -495,4 +713,4 @@
   .table-row span:nth-child(6) {
     display: none;
   }
-} 
+}

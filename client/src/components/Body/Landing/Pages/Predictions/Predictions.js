@@ -1,11 +1,135 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { predictionService } from '../../../../../services/predictionService';
 import './Predictions.css';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Predictions = () => {
   const [selectedCrypto, setSelectedCrypto] = useState('BTC');
   const [timeframe, setTimeframe] = useState('24h');
   const [isAutoTradeEnabled, setIsAutoTradeEnabled] = useState(false);
   const [autoTradeStatus, setAutoTradeStatus] = useState('Inactive');
+  const [loading, setLoading] = useState(false);
+  const [prediction, setPrediction] = useState(null);
+  const [error, setError] = useState(null);
+  const [predictions, setPredictions] = useState({
+    BTC: {
+      '24h': {
+        prediction: '$45,000',
+        confidence: 85,
+        factors: [
+          'Strong market momentum',
+          'Increased institutional adoption',
+          'Positive technical indicators'
+        ]
+      },
+      '7d': {
+        prediction: '$48,000',
+        confidence: 75,
+        factors: [
+          'Growing DeFi integration',
+          'Regulatory clarity improvements',
+          'Rising retail interest'
+        ]
+      },
+      '30d': {
+        prediction: '$52,000',
+        confidence: 65,
+        factors: [
+          'Long-term adoption trends',
+          'Macro-economic factors',
+          'Market cycle analysis'
+        ]
+      }
+    },
+    ETH: {
+      '24h': {
+        prediction: '$2,400',
+        confidence: 82,
+        factors: [
+          'Network upgrade success',
+          'DeFi ecosystem growth',
+          'Staking participation increase'
+        ]
+      },
+      '7d': {
+        prediction: '$2,600',
+        confidence: 72,
+        factors: [
+          'Layer 2 adoption',
+          'NFT market recovery',
+          'Protocol improvements'
+        ]
+      },
+      '30d': {
+        prediction: '$3,000',
+        confidence: 62,
+        factors: [
+          'ETH 2.0 development',
+          'Institutional interest',
+          'DeFi innovation'
+        ]
+      }
+    },
+    SOL: {
+      '24h': {
+        prediction: '$102',
+        confidence: 80,
+        factors: [
+          'Network stability',
+          'Developer activity',
+          'DApp growth'
+        ]
+      },
+      '7d': {
+        prediction: '$110',
+        confidence: 70,
+        factors: [
+          'Ecosystem expansion',
+          'Partnership announcements',
+          'Technical improvements'
+        ]
+      },
+      '30d': {
+        prediction: '$125',
+        confidence: 60,
+        factors: [
+          'Market share growth',
+          'Infrastructure development',
+          'Community engagement'
+        ]
+      }
+    },
+    BNB: {
+      '24h': {
+        prediction: '$320',
+        confidence: 83,
+        factors: [
+          'Exchange volume growth',
+          'BNB Chain adoption',
+          'Token burn mechanics'
+        ]
+      },
+      '7d': {
+        prediction: '$340',
+        confidence: 73,
+        factors: [
+          'DeFi protocol launches',
+          'Cross-chain integration',
+          'Market maker activity'
+        ]
+      },
+      '30d': {
+        prediction: '$380',
+        confidence: 63,
+        factors: [
+          'Exchange development',
+          'Regulatory compliance',
+          'Ecosystem growth'
+        ]
+      }
+    }
+  });
 
   const cryptocurrencies = [
     { symbol: 'BTC', name: 'Bitcoin', price: '$43,521.23', change: '+2.34%' },
@@ -14,27 +138,37 @@ const Predictions = () => {
     { symbol: 'BNB', name: 'Binance Coin', price: '$312.89', change: '+0.89%' },
   ];
 
-  const predictions = {
-    BTC: {
-      '24h': {
-        prediction: '+3.2%',
-        confidence: 89,
-        factors: ['Market sentiment', 'Trading volume', 'Network activity'],
-        historicalAccuracy: 92,
-      },
-      '7d': {
-        prediction: '+8.5%',
-        confidence: 85,
-        factors: ['Technical indicators', 'Market cycles', 'Institutional flows'],
-        historicalAccuracy: 88,
-      },
-      '30d': {
-        prediction: '+15.3%',
-        confidence: 82,
-        factors: ['Macro trends', 'Regulatory environment', 'Adoption metrics'],
-        historicalAccuracy: 85,
-      },
-    },
+  useEffect(() => {
+    fetchPrediction();
+  }, [selectedCrypto]);
+
+  const fetchPrediction = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await predictionService.getPrediction(selectedCrypto);
+      setPrediction(result);
+    } catch (err) {
+      setError('Failed to fetch prediction. ' + err.message);
+      toast.error('Failed to fetch prediction');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const trainModel = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await predictionService.trainModel(selectedCrypto);
+      toast.success('Model trained successfully');
+      fetchPrediction();
+    } catch (err) {
+      setError('Failed to train model. ' + err.message);
+      toast.error('Failed to train model');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const recentPredictions = [
@@ -98,6 +232,109 @@ const Predictions = () => {
 
   return (
     <div className="predictions-container">
+      {error && <div className="error-message">{error}</div>}
+      {loading ? (
+        <div className="loading">Loading predictions...</div>
+      ) : (
+        <div className="prediction-content">
+          <div className="crypto-selector">
+            <h2>Select Cryptocurrency</h2>
+            <select 
+              value={selectedCrypto} 
+              onChange={(e) => setSelectedCrypto(e.target.value)}
+            >
+              {cryptocurrencies.map(crypto => (
+                <option key={crypto.symbol} value={crypto.symbol}>
+                  {crypto.name} ({crypto.symbol})
+                </option>
+              ))}
+            </select>
+            <button onClick={trainModel} disabled={loading}>
+              Train Model
+            </button>
+          </div>
+
+          {prediction && (
+            <div className="prediction-details">
+              <h3>Price Predictions for {selectedCrypto}</h3>
+              <div className="prediction-grid">
+                <div className="prediction-card">
+                  <h4>Opening Price</h4>
+                  <p>${prediction.prediction.open.toFixed(2)}</p>
+                </div>
+                <div className="prediction-card">
+                  <h4>Highest Price</h4>
+                  <p>${prediction.prediction.high.toFixed(2)}</p>
+                </div>
+                <div className="prediction-card">
+                  <h4>Lowest Price</h4>
+                  <p>${prediction.prediction.low.toFixed(2)}</p>
+                </div>
+                <div className="prediction-card">
+                  <h4>Closing Price</h4>
+                  <p>${prediction.prediction.close.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="auto-trade-section">
+            <h3>Auto Trading</h3>
+            <div className="auto-trade-controls">
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={isAutoTradeEnabled}
+                  onChange={toggleAutoTrade}
+                />
+                <span className="slider round"></span>
+              </label>
+              <span className="auto-trade-status">Status: {autoTradeStatus}</span>
+            </div>
+          </div>
+
+          <div className="market-factors">
+            <h3>Market Analysis Factors</h3>
+            <div className="factors-grid">
+              {marketFactors.map((factor, index) => (
+                <div key={index} className={`factor-card ${factor.trend}`}>
+                  <h4>{factor.name}</h4>
+                  <div className="factor-value">{factor.value}%</div>
+                  <p>{factor.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="recent-predictions">
+            <h3>Recent Prediction Accuracy</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Cryptocurrency</th>
+                  <th>Timeframe</th>
+                  <th>Predicted</th>
+                  <th>Actual</th>
+                  <th>Accuracy</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentPredictions.map((pred, index) => (
+                  <tr key={index}>
+                    <td>{pred.crypto}</td>
+                    <td>{pred.timeframe}</td>
+                    <td>{pred.predicted}</td>
+                    <td>{pred.actual}</td>
+                    <td>{pred.accuracy}%</td>
+                    <td>{pred.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
       <div className="predictions-header">
         <div className="header-content">
           <h1>Quantum-Powered Price Predictions</h1>
@@ -273,4 +510,4 @@ const Predictions = () => {
   );
 };
 
-export default Predictions; 
+export default Predictions;
