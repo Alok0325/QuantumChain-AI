@@ -1,5 +1,4 @@
 require("dotenv").config();
-//Checking the changes..
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -11,19 +10,20 @@ const geoip = require("geoip-lite");
 const { setupRoutes } = require("./Routes/setupRoutes");
 const db = require("./database");
 const infoRoutes = require("./infoRoutes");
-const {setupModels} = require("./Models/setModels");
+const { setupModels } = require("./Models/setModels");
 
 
-// Just check-checkinf git working
-app = express();
+const app = express();
 
-app.set("trust proxy", 1); // 1 means trust the first proxy, usually Nginx or another load balancer
+app.set("trust proxy", 1); // trust first proxy (e.g. Nginx / load balancer)
+
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:3000";
 
 app.use(
   cors({
-    origin: "http://localhost:3001",
+    origin: CLIENT_ORIGIN,
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: true,
   })
 );
 
@@ -90,12 +90,12 @@ setupModels();
 
 
 
+const PORT = process.env.APP_PORT || 5001;
+
 db.sync({})
-  .then(async () => {
-    app.listen(process.env.APP_PORT);
-    console.log(`Listening to the port : ${process.env.APP_PORT}`);
-    
-    
-    //console.log("Alter is on for the databases");
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Listening on port : ${PORT}`);
+    });
   })
   .catch((err) => console.log(err));
