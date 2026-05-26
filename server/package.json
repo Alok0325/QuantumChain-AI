@@ -7,7 +7,8 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "proxy": "node proxy.js",
-    "proxy:dev": "nodemon proxy.js"
+    "proxy:dev": "nodemon proxy.js",
+    "rotate-keys": "node scripts/rotate-master-key.js"
   },
   "keywords": [],
   "author": "",
@@ -19,12 +20,16 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.18.2",
+    "express-rate-limit": "^7.4.0",
     "express-useragent": "^1.0.15",
+    "ioredis": "^5.4.1",
     "geoip-lite": "^1.4.10",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.11.0",
+    "prom-client": "^15.1.3",
     "sequelize": "^6.37.3",
+    "speakeasy": "^2.0.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

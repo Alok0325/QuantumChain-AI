@@ -1,511 +1,506 @@
-import React, { useState, useEffect } from 'react';
-import { predictionService } from '../../../../../services/predictionService';
-import './Predictions.css';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const Predictions = () => {
-  const [selectedCrypto, setSelectedCrypto] = useState('BTC');
-  const [timeframe, setTimeframe] = useState('24h');
-  const [isAutoTradeEnabled, setIsAutoTradeEnabled] = useState(false);
-  const [autoTradeStatus, setAutoTradeStatus] = useState('Inactive');
-  const [loading, setLoading] = useState(false);
-  const [prediction, setPrediction] = useState(null);
-  const [error, setError] = useState(null);
-  const [predictions, setPredictions] = useState({
-    BTC: {
-      '24h': {
-        prediction: '$45,000',
-        confidence: 85,
-        factors: [
-          'Strong market momentum',
-          'Increased institutional adoption',
-          'Positive technical indicators'
-        ]
-      },
-      '7d': {
-        prediction: '$48,000',
-        confidence: 75,
-        factors: [
-          'Growing DeFi integration',
-          'Regulatory clarity improvements',
-          'Rising retail interest'
-        ]
-      },
-      '30d': {
-        prediction: '$52,000',
-        confidence: 65,
-        factors: [
-          'Long-term adoption trends',
-          'Macro-economic factors',
-          'Market cycle analysis'
-        ]
-      }
-    },
-    ETH: {
-      '24h': {
-        prediction: '$2,400',
-        confidence: 82,
-        factors: [
-          'Network upgrade success',
-          'DeFi ecosystem growth',
-          'Staking participation increase'
-        ]
-      },
-      '7d': {
-        prediction: '$2,600',
-        confidence: 72,
-        factors: [
-          'Layer 2 adoption',
-          'NFT market recovery',
-          'Protocol improvements'
-        ]
-      },
-      '30d': {
-        prediction: '$3,000',
-        confidence: 62,
-        factors: [
-          'ETH 2.0 development',
-          'Institutional interest',
-          'DeFi innovation'
-        ]
-      }
-    },
-    SOL: {
-      '24h': {
-        prediction: '$102',
-        confidence: 80,
-        factors: [
-          'Network stability',
-          'Developer activity',
-          'DApp growth'
-        ]
-      },
-      '7d': {
-        prediction: '$110',
-        confidence: 70,
-        factors: [
-          'Ecosystem expansion',
-          'Partnership announcements',
-          'Technical improvements'
-        ]
-      },
-      '30d': {
-        prediction: '$125',
-        confidence: 60,
-        factors: [
-          'Market share growth',
-          'Infrastructure development',
-          'Community engagement'
-        ]
-      }
-    },
-    BNB: {
-      '24h': {
-        prediction: '$320',
-        confidence: 83,
-        factors: [
-          'Exchange volume growth',
-          'BNB Chain adoption',
-          'Token burn mechanics'
-        ]
-      },
-      '7d': {
-        prediction: '$340',
-        confidence: 73,
-        factors: [
-          'DeFi protocol launches',
-          'Cross-chain integration',
-          'Market maker activity'
-        ]
-      },
-      '30d': {
-        prediction: '$380',
-        confidence: 63,
-        factors: [
-          'Exchange development',
-          'Regulatory compliance',
-          'Ecosystem growth'
-        ]
-      }
-    }
-  });
+import predictionService from '../../../../../services/predictionService';
+import useAutoTradeConfig from '../../../../../hooks/useAutoTradeConfig';
+import AckLiveModal from '../../../../AckLiveModal/AckLiveModal';
 
-  const cryptocurrencies = [
-    { symbol: 'BTC', name: 'Bitcoin', price: '$43,521.23', change: '+2.34%' },
-    { symbol: 'ETH', name: 'Ethereum', price: '$2,345.67', change: '-1.23%' },
-    { symbol: 'SOL', name: 'Solana', price: '$98.45', change: '+5.67%' },
-    { symbol: 'BNB', name: 'Binance Coin', price: '$312.89', change: '+0.89%' },
-  ];
+const SYMBOLS = [
+  { symbol: 'BTC', name: 'Bitcoin' },
+  { symbol: 'ETH', name: 'Ethereum' },
+  { symbol: 'SOL', name: 'Solana' },
+  { symbol: 'BNB', name: 'Binance Coin' },
+  { symbol: 'ATOM', name: 'Cosmos' },
+];
+
+const usd = (v) =>
+  v == null
+    ? '—'
+    : new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: v >= 100 ? 2 : 4,
+      }).format(v);
+
+const pct = (v) =>
+  v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+
+const fetchSpot = async (symbol) => {
+  const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}USDT`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Binance spot ${symbol} ${res.status}`);
+  const data = await res.json();
+  return parseFloat(data.price);
+};
+
+const Predictions = () => {
+  const [selected, setSelected] = useState('BTC');
+  const [spot, setSpot] = useState(null);
+  const [prediction, setPrediction] = useState(null);
+  const [rationale, setRationale] = useState(null);
+  const [loadingPrediction, setLoadingPrediction] = useState(false);
+  const [loadingRationale, setLoadingRationale] = useState(false);
+  const [training, setTraining] = useState(false);
+  const [serviceHealth, setServiceHealth] = useState(null);
+
+  const {
+    config: autoTrade,
+    synced,
+    saving,
+    update: updateAutoTrade,
+    engageKill,
+    clearKill,
+    acknowledgeLiveAndEnable,
+  } = useAutoTradeConfig();
+
+  const [ackOpen, setAckOpen] = useState(false);
+  const [ackBusy, setAckBusy] = useState(false);
 
   useEffect(() => {
-    fetchPrediction();
-  }, [selectedCrypto]);
+    predictionService.health().then(setServiceHealth).catch(() => setServiceHealth(null));
+  }, []);
 
-  const fetchPrediction = async () => {
+  const load = useCallback(async (symbol) => {
+    setPrediction(null);
+    setRationale(null);
+    setSpot(null);
+
+    let anchor = 30000;
     try {
-      setLoading(true);
-      setError(null);
-      const result = await predictionService.getPrediction(selectedCrypto);
-      setPrediction(result);
+      const price = await fetchSpot(symbol);
+      setSpot(price);
+      anchor = price;
+    } catch {
+      setSpot(null);
+    }
+
+    setLoadingPrediction(true);
+    const pred = await predictionService.predictOrDemo(symbol, anchor);
+    setPrediction(pred);
+    setLoadingPrediction(false);
+
+    setLoadingRationale(true);
+    try {
+      const r = await predictionService.rationale({
+        symbol,
+        current_price: anchor,
+        predicted: pred.prediction,
+      });
+      setRationale(r);
     } catch (err) {
-      setError('Failed to fetch prediction. ' + err.message);
-      toast.error('Failed to fetch prediction');
+      setRationale({
+        rationale: `Rationale unavailable: ${err.message}`,
+        confidence_label: 'low',
+        risk_factors: ['LLM service offline. Start the FastAPI service with ANTHROPIC_API_KEY set.'],
+      });
     } finally {
-      setLoading(false);
+      setLoadingRationale(false);
+    }
+  }, []);
+
+  useEffect(() => { load(selected); }, [selected, load]);
+
+  const handleTrain = async () => {
+    setTraining(true);
+    try {
+      await predictionService.train(selected);
+      toast.success(`Training kicked off for ${selected}`);
+      await load(selected);
+    } catch (err) {
+      toast.error(`Train failed: ${err.message}`);
+    } finally {
+      setTraining(false);
     }
   };
 
-  const trainModel = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      await predictionService.trainModel(selectedCrypto);
-      toast.success('Model trained successfully');
-      fetchPrediction();
-    } catch (err) {
-      setError('Failed to train model. ' + err.message);
-      toast.error('Failed to train model');
-    } finally {
-      setLoading(false);
+  const move = useMemo(() => {
+    if (!prediction || !spot) return null;
+    return ((prediction.prediction.close - spot) / spot) * 100;
+  }, [prediction, spot]);
+
+  const bias = useMemo(() => {
+    if (!prediction) return null;
+    const { open, close } = prediction.prediction;
+    if (close > open * 1.001) return 'bullish';
+    if (close < open * 0.999) return 'bearish';
+    return 'neutral';
+  }, [prediction]);
+
+  const toggleAllowedSymbol = (sym) => {
+    const has = autoTrade.allowedSymbols.includes(sym);
+    const next = has
+      ? autoTrade.allowedSymbols.filter((s) => s !== sym)
+      : [...autoTrade.allowedSymbols, sym];
+    updateAutoTrade({ allowedSymbols: next });
+  };
+
+  const triggerKillSwitch = async () => {
+    await engageKill('User triggered kill switch');
+    toast.warn('Kill switch engaged — auto-trade disabled.');
+  };
+  const clearKillSwitch = () => clearKill();
+
+  const handleModeClick = (nextMode) => {
+    if (nextMode === autoTrade.mode) return;
+    if (nextMode === 'live') {
+      if (!synced) {
+        toast.error('Sign in first to enable live trading.');
+        return;
+      }
+      setAckOpen(true);
+    } else {
+      updateAutoTrade({ mode: nextMode });
     }
   };
 
-  const recentPredictions = [
-    {
-      crypto: 'BTC',
-      timeframe: '24h',
-      predicted: '+2.5%',
-      actual: '+2.8%',
-      accuracy: 96,
-      date: '2024-03-15',
-    },
-    {
-      crypto: 'ETH',
-      timeframe: '24h',
-      predicted: '-1.0%',
-      actual: '-1.2%',
-      accuracy: 94,
-      date: '2024-03-15',
-    },
-    {
-      crypto: 'SOL',
-      timeframe: '24h',
-      predicted: '+4.0%',
-      actual: '+5.7%',
-      accuracy: 92,
-      date: '2024-03-15',
-    },
-  ];
+  const handleAckSubmit = async (password) => {
+    setAckBusy(true);
+    try {
+      await acknowledgeLiveAndEnable(password);
+      setAckOpen(false);
+      toast.success('Live trading enabled.');
+    } finally {
+      setAckBusy(false);
+    }
+  };
 
-  const marketFactors = [
-    {
-      name: 'Market Sentiment',
-      value: 78,
-      trend: 'positive',
-      description: 'Overall market sentiment is bullish with increasing institutional interest.',
-    },
-    {
-      name: 'Technical Analysis',
-      value: 82,
-      trend: 'positive',
-      description: 'Technical indicators show strong support levels and upward momentum.',
-    },
-    {
-      name: 'Network Activity',
-      value: 65,
-      trend: 'neutral',
-      description: 'Network metrics indicate stable growth in user adoption.',
-    },
-    {
-      name: 'Regulatory Impact',
-      value: 45,
-      trend: 'negative',
-      description: 'Recent regulatory developments may create short-term volatility.',
-    },
-  ];
+  const statusPill = (() => {
+    if (!serviceHealth) return { label: 'ML offline · demo', tone: 'warn' };
+    if (serviceHealth.predictor_available && serviceHealth.llm_enabled) return { label: 'Live · ML + Claude', tone: 'good' };
+    if (serviceHealth.llm_enabled) return { label: 'LLM only · predictor unavailable', tone: 'warn' };
+    return { label: 'Predictor only · LLM disabled', tone: 'warn' };
+  })();
 
-  const toggleAutoTrade = () => {
-    setIsAutoTradeEnabled(!isAutoTradeEnabled);
-    setAutoTradeStatus(prev => prev === 'Inactive' ? 'Active - AI Trading' : 'Inactive');
+  const pillBase = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border bg-black/20 whitespace-nowrap';
+  const toneCls = statusPill.tone === 'good'
+    ? 'border-white/10 text-emerald-300'
+    : 'border-white/10 text-amber-300';
+  const dotCls = statusPill.tone === 'good'
+    ? 'w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]'
+    : 'w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b]';
+
+  const confidenceBadge = (label) => {
+    const map = {
+      high:   'bg-emerald-500/15 text-emerald-300 border-emerald-400/30',
+      medium: 'bg-amber-500/15  text-amber-300  border-amber-400/30',
+      low:    'bg-rose-500/15   text-rose-300   border-rose-400/30',
+    };
+    return `inline-block px-3 py-1 rounded-full text-[0.7rem] font-semibold uppercase tracking-wider border ${map[label] || map.low}`;
   };
 
   return (
-    <div className="predictions-container">
-      {error && <div className="error-message">{error}</div>}
-      {loading ? (
-        <div className="loading">Loading predictions...</div>
-      ) : (
-        <div className="prediction-content">
-          <div className="crypto-selector">
-            <h2>Select Cryptocurrency</h2>
-            <select 
-              value={selectedCrypto} 
-              onChange={(e) => setSelectedCrypto(e.target.value)}
-            >
-              {cryptocurrencies.map(crypto => (
-                <option key={crypto.symbol} value={crypto.symbol}>
-                  {crypto.name} ({crypto.symbol})
-                </option>
+    <div className="max-w-[1280px] mx-auto p-8 flex flex-col gap-8 text-slate-100">
+      <header className="flex justify-between items-start gap-6 p-6 rounded-2xl border border-white/10 shadow-2xl"
+              style={{ background: 'linear-gradient(135deg, rgba(36,40,58,0.85), rgba(20,22,32,0.85))' }}>
+        <div>
+          <h1 className="text-3xl font-bold qc-title-gradient">AI Price Predictions</h1>
+          <p className="mt-2 max-w-2xl text-slate-300 leading-relaxed">
+            LSTM/XGBoost next-hour OHLC forecast paired with Claude-generated
+            trade rationale. Plug in your Binance keys to enable AI Auto-Trade.
+          </p>
+        </div>
+        <div className={`${pillBase} ${toneCls}`}>
+          <span className={dotCls} />
+          {statusPill.label}
+        </div>
+      </header>
+
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
+        {SYMBOLS.map((s) => (
+          <button
+            key={s.symbol}
+            type="button"
+            className={`flex flex-col items-center gap-1 p-4 rounded-2xl border border-white/10 cursor-pointer transition
+              ${selected === s.symbol
+                ? 'bg-gradient-to-br from-cyan-300/15 to-purple-400/15 border-cyan-300/50 ring-1 ring-cyan-300/30'
+                : 'bg-white/5 hover:bg-white/[0.07] hover:-translate-y-0.5'}`}
+            onClick={() => setSelected(s.symbol)}
+          >
+            <span className="text-lg font-bold tracking-wide">{s.symbol}</span>
+            <span className="text-sm text-slate-400">{s.name}</span>
+          </button>
+        ))}
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-6">
+        <article className="qc-card">
+          <header className="flex justify-between items-start gap-4 mb-5">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-100">Next-Hour Forecast</h3>
+              <p className="text-sm text-slate-400 mt-1">Powered by the active backend (XGB / LSTM / ensemble)</p>
+            </div>
+            {prediction?.demo && (
+              <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-400/40 text-xs uppercase tracking-wider">demo</span>
+            )}
+          </header>
+
+          <div className="grid grid-cols-3 gap-3 p-4 rounded-xl bg-white/[0.03] mb-5">
+            <div className="flex flex-col gap-1">
+              <span className="text-slate-400 text-xs">Spot</span>
+              <span className="text-xl font-semibold">{usd(spot)}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-slate-400 text-xs">Bias</span>
+              <span className={`text-xl font-semibold capitalize ${
+                bias === 'bullish' ? 'text-emerald-400' :
+                bias === 'bearish' ? 'text-rose-400' : 'text-slate-400'}`}>{bias || '—'}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-slate-400 text-xs">Predicted Move</span>
+              <span className={`text-xl font-semibold ${move >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{pct(move)}</span>
+            </div>
+          </div>
+
+          {loadingPrediction ? (
+            <div className="grid grid-cols-4 gap-2">
+              {[0,1,2,3].map(i => (
+                <div key={i} className="h-14 rounded-lg bg-[linear-gradient(90deg,rgba(255,255,255,0.04),rgba(255,255,255,0.1),rgba(255,255,255,0.04))] bg-[length:200%_100%] animate-shimmer" />
               ))}
-            </select>
-            <button onClick={trainModel} disabled={loading}>
-              Train Model
+            </div>
+          ) : prediction ? (
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                ['Open',  prediction.prediction.open,  ''],
+                ['High',  prediction.prediction.high,  'text-emerald-400'],
+                ['Low',   prediction.prediction.low,   'text-rose-400'],
+                ['Close', prediction.prediction.close, ''],
+              ].map(([label, val, tone]) => (
+                <div key={label} className="flex flex-col gap-1.5 px-3.5 py-3.5 rounded-lg bg-white/[0.03]">
+                  <span className="text-slate-400 text-[0.7rem] uppercase tracking-wider">{label}</span>
+                  <strong className={`text-base ${tone || 'text-slate-100'}`}>{usd(val)}</strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-slate-400">No forecast yet.</p>
+          )}
+
+          <footer className="mt-5 flex justify-between items-center">
+            <button
+              type="button"
+              className="qc-btn qc-btn-ghost"
+              onClick={handleTrain}
+              disabled={training || !serviceHealth?.predictor_available}
+              title={!serviceHealth?.predictor_available ? 'Start the FastAPI service to train' : 'Train a fresh model for this symbol'}
+            >
+              {training ? 'Training…' : 'Train model'}
+            </button>
+            <span className="text-slate-400 text-xs">model: {prediction?.model_version || '—'}</span>
+          </footer>
+        </article>
+
+        <article className="qc-card">
+          <header className="flex justify-between items-start gap-4 mb-5">
+            <div>
+              <h3 className="text-lg font-semibold">AI Rationale</h3>
+              <p className="text-sm text-slate-400 mt-1">Claude-generated trade narrative + risk factors</p>
+            </div>
+            {rationale && (
+              <span className={confidenceBadge(rationale.confidence_label)}>
+                {rationale.confidence_label} confidence
+              </span>
+            )}
+          </header>
+
+          {loadingRationale ? (
+            <div className="flex flex-col gap-2">
+              {[0,1,2].map(i => (
+                <div key={i} className={`h-3.5 rounded ${i===1 ? 'w-3/4' : ''} bg-[linear-gradient(90deg,rgba(255,255,255,0.04),rgba(255,255,255,0.1),rgba(255,255,255,0.04))] bg-[length:200%_100%] animate-shimmer`} />
+              ))}
+            </div>
+          ) : rationale ? (
+            <>
+              <p className="text-base leading-relaxed text-slate-200 mb-5">{rationale.rationale}</p>
+              {rationale.risk_factors?.length > 0 && (
+                <div>
+                  <h4 className="text-xs uppercase tracking-wider text-slate-400 mb-2">Risks to monitor</h4>
+                  <ul className="list-disc list-outside ml-5 marker:text-rose-400 text-slate-300 space-y-1">
+                    {rationale.risk_factors.map((r, i) => <li key={i}>{r}</li>)}
+                  </ul>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-slate-400">No rationale yet.</p>
+          )}
+        </article>
+      </section>
+
+      <section className="qc-card">
+        <header className="flex justify-between items-start gap-4 mb-5">
+          <div>
+            <h3 className="text-lg font-semibold">AI Auto-Trade</h3>
+            <p className="text-sm text-slate-400 mt-1">
+              {synced
+                ? 'Configured here, executed by the server-side engine in dry-run mode every 5 min.'
+                : 'Configured here, persisted to your browser. Sign in for server-side execution.'}
+            </p>
+            <span className={`inline-block mt-2 px-3 py-1 rounded-full text-[0.7rem] font-semibold uppercase tracking-wider border ${
+              synced
+                ? 'bg-emerald-500/12 text-emerald-300 border-emerald-400/35'
+                : 'bg-slate-500/12 text-slate-400 border-slate-400/35'}`}>
+              {synced ? (saving ? 'Syncing…' : 'Synced · server engine') : 'Local-only · sign in to sync'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/25 rounded-full text-sm">
+            <span className={`inline-block w-2.5 h-2.5 rounded-full ${
+              autoTrade.killSwitchTriggered ? 'bg-rose-500 shadow-[0_0_10px_#ef4444]' :
+              autoTrade.enabled ? 'bg-emerald-400 shadow-[0_0_10px_#34d399] animate-pulse-dot' : 'bg-slate-500'
+            }`} />
+            <span>
+              {autoTrade.killSwitchTriggered ? 'KILL SWITCH' : autoTrade.enabled ? `Active · ${autoTrade.mode}` : 'Disabled'}
+            </span>
+          </div>
+        </header>
+
+        <div className="flex items-center gap-4 flex-wrap mb-5">
+          <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              className="hidden"
+              checked={autoTrade.enabled}
+              disabled={autoTrade.killSwitchTriggered}
+              onChange={(e) => updateAutoTrade({ enabled: e.target.checked })}
+            />
+            <span className={`relative w-11 h-6 rounded-full transition ${
+              autoTrade.enabled ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-slate-600'
+            } ${autoTrade.killSwitchTriggered ? 'opacity-40 cursor-not-allowed' : ''}`}>
+              <span className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] bg-white rounded-full transition ${
+                autoTrade.enabled ? 'translate-x-[18px]' : ''
+              }`} />
+            </span>
+            <span className="text-sm">{autoTrade.enabled ? 'Enabled' : 'Disabled'}</span>
+          </label>
+
+          <div className="inline-flex bg-black/25 rounded-lg p-[3px] border border-white/10">
+            <button
+              type="button"
+              className={`px-3.5 py-1.5 rounded-md text-sm font-medium transition ${
+                autoTrade.mode === 'dry-run' ? 'bg-cyan-300/20 text-cyan-300' : 'text-slate-300'
+              }`}
+              onClick={() => handleModeClick('dry-run')}
+            >
+              Dry-run
+            </button>
+            <button
+              type="button"
+              className={`px-3.5 py-1.5 rounded-md text-sm font-bold transition ${
+                autoTrade.mode === 'live'
+                  ? 'bg-gradient-to-br from-rose-400/25 to-purple-400/25 text-rose-400'
+                  : 'text-slate-300'
+              } ${!synced ? 'opacity-40 cursor-not-allowed' : ''}`}
+              onClick={() => handleModeClick('live')}
+              disabled={!synced}
+              title={synced ? 'Switch to live trading' : 'Sign in to enable live'}
+            >
+              Live
             </button>
           </div>
 
-          {prediction && (
-            <div className="prediction-details">
-              <h3>Price Predictions for {selectedCrypto}</h3>
-              <div className="prediction-grid">
-                <div className="prediction-card">
-                  <h4>Opening Price</h4>
-                  <p>${prediction.prediction.open.toFixed(2)}</p>
-                </div>
-                <div className="prediction-card">
-                  <h4>Highest Price</h4>
-                  <p>${prediction.prediction.high.toFixed(2)}</p>
-                </div>
-                <div className="prediction-card">
-                  <h4>Lowest Price</h4>
-                  <p>${prediction.prediction.low.toFixed(2)}</p>
-                </div>
-                <div className="prediction-card">
-                  <h4>Closing Price</h4>
-                  <p>${prediction.prediction.close.toFixed(2)}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="auto-trade-section">
-            <h3>Auto Trading</h3>
-            <div className="auto-trade-controls">
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  checked={isAutoTradeEnabled}
-                  onChange={toggleAutoTrade}
-                />
-                <span className="slider round"></span>
-              </label>
-              <span className="auto-trade-status">Status: {autoTradeStatus}</span>
-            </div>
-          </div>
-
-          <div className="market-factors">
-            <h3>Market Analysis Factors</h3>
-            <div className="factors-grid">
-              {marketFactors.map((factor, index) => (
-                <div key={index} className={`factor-card ${factor.trend}`}>
-                  <h4>{factor.name}</h4>
-                  <div className="factor-value">{factor.value}%</div>
-                  <p>{factor.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="recent-predictions">
-            <h3>Recent Prediction Accuracy</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Cryptocurrency</th>
-                  <th>Timeframe</th>
-                  <th>Predicted</th>
-                  <th>Actual</th>
-                  <th>Accuracy</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentPredictions.map((pred, index) => (
-                  <tr key={index}>
-                    <td>{pred.crypto}</td>
-                    <td>{pred.timeframe}</td>
-                    <td>{pred.predicted}</td>
-                    <td>{pred.actual}</td>
-                    <td>{pred.accuracy}%</td>
-                    <td>{pred.date}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-      <div className="predictions-header">
-        <div className="header-content">
-          <h1>Quantum-Powered Price Predictions</h1>
-          <p className="subtitle">
-            Leveraging advanced quantum computing and AI to provide accurate cryptocurrency price predictions
-          </p>
-        </div>
-        <div className="auto-trade-section">
-          <div className="auto-trade-status">
-            <span className={`status-indicator ${isAutoTradeEnabled ? 'active' : 'inactive'}`}></span>
-            <span className="status-text">{autoTradeStatus}</span>
-          </div>
-          <button 
-            className={`auto-trade-toggle ${isAutoTradeEnabled ? 'enabled' : ''}`}
-            onClick={toggleAutoTrade}
+          <button
+            type="button"
+            className="qc-btn qc-btn-danger"
+            onClick={autoTrade.killSwitchTriggered ? clearKillSwitch : triggerKillSwitch}
           >
-            {isAutoTradeEnabled ? 'Disable AI Auto-Trade' : 'Enable AI Auto-Trade'}
+            {autoTrade.killSwitchTriggered ? 'Reset kill switch' : 'Engage kill switch'}
           </button>
         </div>
-      </div>
 
-      <div className="crypto-selector">
-        <div className="crypto-list">
-          {cryptocurrencies.map((crypto) => (
-            <div
-              key={crypto.symbol}
-              className={`crypto-item ${selectedCrypto === crypto.symbol ? 'selected' : ''}`}
-              onClick={() => setSelectedCrypto(crypto.symbol)}
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4 mb-5">
+          {[
+            { label: 'Max position (USD)', key: 'maxPositionUsd', step: 50, min: 0 },
+            { label: 'Daily loss limit (USD)', key: 'dailyLossLimitUsd', step: 10, min: 0 },
+            { label: 'Stop loss (%)', key: 'stopLossPct', step: 0.1, min: 0.1 },
+            { label: 'Take profit (%)', key: 'takeProfitPct', step: 0.1, min: 0.1 },
+          ].map(({ label, key, step, min }) => (
+            <label key={key} className="flex flex-col gap-1.5">
+              <span className="qc-label-up">{label}</span>
+              <input
+                type="number"
+                className="qc-input"
+                min={min}
+                step={step}
+                value={autoTrade[key]}
+                onChange={(e) => updateAutoTrade({ [key]: Number(e.target.value) })}
+              />
+            </label>
+          ))}
+          <label className="flex flex-col gap-1.5">
+            <span className="qc-label-up">Min AI confidence</span>
+            <select
+              className="qc-input"
+              value={autoTrade.minConfidence}
+              onChange={(e) => updateAutoTrade({ minConfidence: e.target.value })}
             >
-              <span className="crypto-symbol">{crypto.symbol}</span>
-              <span className="crypto-name">{crypto.name}</span>
-              <span className="crypto-price">{crypto.price}</span>
-              <span className={`crypto-change ${crypto.change.startsWith('+') ? 'positive' : 'negative'}`}>
-                {crypto.change}
-              </span>
+              <option value="low">low (aggressive)</option>
+              <option value="medium">medium</option>
+              <option value="high">high (conservative)</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="flex flex-col gap-2 mb-4">
+          <span className="qc-label-up">Allowed symbols</span>
+          <div className="flex gap-2 flex-wrap">
+            {SYMBOLS.map((s) => {
+              const on = autoTrade.allowedSymbols.includes(s.symbol);
+              return (
+                <button
+                  key={s.symbol}
+                  type="button"
+                  className={`px-3.5 py-1.5 rounded-full text-sm border transition ${
+                    on
+                      ? 'bg-cyan-300/20 text-cyan-300 border-cyan-300/50'
+                      : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/[0.07]'
+                  }`}
+                  onClick={() => toggleAllowedSymbol(s.symbol)}
+                >
+                  {s.symbol}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <p className="m-0 px-4 py-3.5 rounded-lg bg-amber-500/8 border border-amber-400/25 text-amber-300 text-sm">
+          {autoTrade.mode === 'live' ? (
+            <>🔴 <strong>Live mode is active</strong>. The engine will place real Binance orders. Disable any time with the kill switch.</>
+          ) : (
+            <>
+              ⚠️ Currently in <strong>dry-run</strong>. Decisions are logged but no orders are placed.{' '}
+              <Link to="/settings/api-keys" className="text-cyan-300 hover:underline font-semibold">Add your Binance keys</Link>{' '}
+              and re-acknowledge to enable live trading.
+            </>
+          )}
+        </p>
+      </section>
+
+      <section>
+        <h3 className="text-center text-xl text-slate-300 mb-4">How it works</h3>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-5">
+          {[
+            ['📈', '1. Numeric forecast', 'XGBoost (default) or LSTM trained on 360 days of 1h candles predicts the next hour\'s OHLC.'],
+            ['🧠', '2. Claude rationale',  'Claude consumes the forecast plus 5 recent headlines and returns a hedged, plain-English rationale with risk factors.'],
+            ['🛡️', '3. Safety-first execution', 'Stop-loss, take-profit, daily-loss limit, and a one-click kill switch — all enforced server-side before any order is routed.'],
+          ].map(([icon, title, body]) => (
+            <div key={title} className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center transition hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(110,231,255,0.12)]">
+              <div className="text-3xl mb-2">{icon}</div>
+              <h4 className="text-base text-cyan-300 mb-2">{title}</h4>
+              <p className="text-slate-300 leading-relaxed text-sm">{body}</p>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      <div className="prediction-dashboard">
-        <div className="timeframe-selector">
-          <button
-            className={`timeframe-button ${timeframe === '24h' ? 'active' : ''}`}
-            onClick={() => setTimeframe('24h')}
-          >
-            24 Hours
-          </button>
-          <button
-            className={`timeframe-button ${timeframe === '7d' ? 'active' : ''}`}
-            onClick={() => setTimeframe('7d')}
-          >
-            7 Days
-          </button>
-          <button
-            className={`timeframe-button ${timeframe === '30d' ? 'active' : ''}`}
-            onClick={() => setTimeframe('30d')}
-          >
-            30 Days
-          </button>
-        </div>
-
-        <div className="prediction-cards">
-          <div className="prediction-card main">
-            <h3>Price Prediction</h3>
-            <div className="prediction-value">
-              <span className="value">{predictions[selectedCrypto][timeframe].prediction}</span>
-              <span className="confidence">
-                Confidence: {predictions[selectedCrypto][timeframe].confidence}%
-              </span>
-            </div>
-            <div className="prediction-factors">
-              <h4>Key Factors</h4>
-              <ul>
-                {predictions[selectedCrypto][timeframe].factors.map((factor, index) => (
-                  <li key={index}>{factor}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="historical-accuracy">
-              <h4>Historical Accuracy</h4>
-              <div className="accuracy-bar">
-                <div
-                  className="accuracy-fill"
-                  style={{ width: `${predictions[selectedCrypto][timeframe].historicalAccuracy}%` }}
-                ></div>
-                <span>{predictions[selectedCrypto][timeframe].historicalAccuracy}%</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="prediction-card market-factors">
-            <h3>Market Factors</h3>
-            <div className="factors-list">
-              {marketFactors.map((factor, index) => (
-                <div key={index} className="factor-item">
-                  <div className="factor-header">
-                    <span className="factor-name">{factor.name}</span>
-                    <span className={`factor-value ${factor.trend}`}>{factor.value}%</span>
-                  </div>
-                  <div className="factor-bar">
-                    <div
-                      className={`factor-fill ${factor.trend}`}
-                      style={{ width: `${factor.value}%` }}
-                    ></div>
-                  </div>
-                  <p className="factor-description">{factor.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="recent-predictions">
-          <h3>Recent Predictions</h3>
-          <div className="predictions-table">
-            <div className="table-header">
-              <span>Cryptocurrency</span>
-              <span>Timeframe</span>
-              <span>Predicted</span>
-              <span>Actual</span>
-              <span>Accuracy</span>
-              <span>Date</span>
-            </div>
-            {recentPredictions.map((prediction, index) => (
-              <div key={index} className="table-row">
-                <span>{prediction.crypto}</span>
-                <span>{prediction.timeframe}</span>
-                <span className={prediction.predicted.startsWith('+') ? 'positive' : 'negative'}>
-                  {prediction.predicted}
-                </span>
-                <span className={prediction.actual.startsWith('+') ? 'positive' : 'negative'}>
-                  {prediction.actual}
-                </span>
-                <span className="accuracy">{prediction.accuracy}%</span>
-                <span>{prediction.date}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="quantum-insights">
-        <h3>Quantum Insights</h3>
-        <div className="insights-grid">
-          <div className="insight-card">
-            <div className="insight-icon">⚛️</div>
-            <h4>Quantum Pattern Recognition</h4>
-            <p>
-              Our quantum algorithms analyze complex market patterns that are invisible to classical
-              computing methods.
-            </p>
-          </div>
-          <div className="insight-card">
-            <div className="insight-icon">🤖</div>
-            <h4>AI Learning</h4>
-            <p>
-              Machine learning models continuously improve their predictions based on historical
-              accuracy and market feedback.
-            </p>
-          </div>
-          <div className="insight-card">
-            <div className="insight-icon">📊</div>
-            <h4>Multi-factor Analysis</h4>
-            <p>
-              Comprehensive analysis of technical, fundamental, and sentiment factors to provide
-              accurate predictions.
-            </p>
-          </div>
-        </div>
-      </div>
+      <AckLiveModal
+        open={ackOpen}
+        onClose={() => !ackBusy && setAckOpen(false)}
+        onSubmit={handleAckSubmit}
+        config={autoTrade}
+        busy={ackBusy}
+      />
     </div>
   );
 };

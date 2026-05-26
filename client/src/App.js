@@ -15,6 +15,9 @@ import Portfolio from './components/Body/Landing/Pages/Portfolio/Portfolio';
 import Page from './components/Body/Landing/Pages/Page';
 import PrivateRoute from './components/Body/Landing/auth/PrivateRoute';
 import Profile from './components/Body/Landing/Pages/Profile/Profile';
+import ApiKeys from './components/Body/Landing/Pages/ApiKeys/ApiKeys';
+import TwoFactor from './components/Body/Landing/Pages/TwoFactor/TwoFactor';
+import Reconcile from './components/Body/Landing/Pages/Reconcile/Reconcile';
 import { BinanceProvider } from './context/BinanceContext';
 import AdminPanel from './components/Admin/AdminPanel';
 import './App.css';
@@ -54,6 +57,9 @@ function App() {
                           <Route path="about" element={<About />} />
                           <Route path="portfolio" element={<ProtectedPortfolio />} />
                           <Route path="profile" element={<Profile />} />
+                          <Route path="settings/api-keys" element={<ApiKeys />} />
+                          <Route path="settings/2fa" element={<TwoFactor />} />
+                          <Route path="settings/reconcile" element={<Reconcile />} />
                         </Route>
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />

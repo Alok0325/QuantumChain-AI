@@ -1,23 +1,65 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+      "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #0b1018;
+    color: #e8ecf3;
+  }
+  code {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", "Menlo", monospace;
+  }
 }
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #1a1a1a;
-  color: #ffffff;
-}
+@layer components {
+  /* Generic glassy card primitive — reused across Phase 1-9 Tailwind pages. */
+  .qc-card {
+    @apply rounded-2xl border border-white/10 p-6 shadow-xl;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  /* Generic button primitives */
+  .qc-btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed border border-transparent;
+  }
+  .qc-btn-primary {
+    background: linear-gradient(135deg, #6ee7ff, #b884ff);
+    @apply text-slate-900 hover:-translate-y-0.5;
+  }
+  .qc-btn-ghost {
+    @apply bg-white/5 border-white/10 text-slate-100 hover:bg-white/10;
+  }
+  .qc-btn-danger {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    @apply text-white;
+  }
+
+  /* Form field input */
+  .qc-input {
+    @apply w-full bg-black/30 text-slate-100 border border-white/10 px-3.5 py-2.5 rounded-lg text-base
+      focus:outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20;
+  }
+  .qc-label-up {
+    @apply text-xs uppercase tracking-wider text-slate-400;
+  }
+
+  /* Gradient page-title */
+  .qc-title-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(90deg, #6ee7ff 0%, #4fa3ff 50%, #b884ff 100%);
+  }
 }
 
 .app {
@@ -28,8 +70,6 @@ code {
 
 .main-content {
   flex: 1;
- 
- 
   margin: 0 auto;
   width: 100%;
-} 
+}

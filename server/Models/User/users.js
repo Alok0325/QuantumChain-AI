@@ -38,6 +38,24 @@ const User = sequelize.define(
       type: Sequelize.STRING,
       allowNull: false,
     },
+    // Two-factor (TOTP). When `twoFactorEnabled=true`, the login endpoint
+    // requires a 6-digit code in addition to the password.
+    twoFactorSecret: {
+      type: Sequelize.STRING(64),
+      allowNull: true,
+    },
+    twoFactorEnabled: {
+      type: Sequelize.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    // Bcrypt-hashed backup codes for 2FA recovery. Plaintext is shown to the
+    // user exactly once (at enroll / regenerate). Each code is single-use:
+    // verifying it removes it from the array.
+    twoFactorBackupCodes: {
+      type: Sequelize.JSON,
+      allowNull: true,
+    },
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt fields

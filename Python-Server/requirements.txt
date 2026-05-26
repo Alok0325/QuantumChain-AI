@@ -1,7 +1,22 @@
-numpy==1.24.3
-pandas==2.0.3
-tensorflow==2.13.0
-scikit-learn==1.3.0
-python-binance==1.0.19
-flask==2.3.3 
+# Web framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
 python-dotenv==1.0.1
+httpx==0.27.2
+
+# Optional Redis for distributed news cache (graceful fallback to memory
+# when REDIS_URL is unset).
+redis==5.0.8
+
+# LLM (Anthropic Claude)
+anthropic==0.39.0
+
+# ML / market data — default backend is XGBoost (small install).
+# For the legacy LSTM, additionally `pip install -r requirements-lstm.txt`
+# and set MODEL_BACKEND=lstm.
+xgboost==2.1.1
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.5.2
+python-binance==1.0.19

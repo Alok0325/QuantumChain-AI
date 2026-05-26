@@ -1,0 +1,6 @@
+# Optional LSTM backend (legacy). Adds ~4 GB to the install.
+# Use:
+#   pip install -r requirements.txt -r requirements-lstm.txt
+#   export MODEL_BACKEND=lstm
+# Pinned to a Python-3.12-compatible release (no wheels exist for 3.14 yet).
+tensorflow==2.17.0

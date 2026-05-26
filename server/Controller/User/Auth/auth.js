@@ -9,6 +9,7 @@ const {
   sequelize,
 } = require("../../../importantInfo");
 const UserProfile = require("../../../Models/User/userProfile");
+const { verifyAnyCode } = require("../TwoFactor/twoFactor");
 
 exports.userSignUp = async (req, res, next) => {
   let transaction;
@@ -72,16 +73,13 @@ exports.userSignUp = async (req, res, next) => {
 };
 
 exports.userLogin = async (req, res, next) => {
-  const { emailOrPhone, password } = req.body;
+  const { emailOrPhone, password, code } = req.body;
 
   try {
-    // Step 1: Start a transaction
-
     if (!emailOrPhone || !password) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Step 2: Find the user by phone number
     const user = await User.findOne({
       where: { [Op.or]: [{ email: emailOrPhone }, { phone: emailOrPhone }] },
     });
@@ -90,22 +88,36 @@ exports.userLogin = async (req, res, next) => {
       return res.status(404).json({ error: "User doesn't exist" });
     }
 
-    // Step 3: Compare the provided password with the stored password hash
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid Password" });
+    }
+
+    // 2FA gate — TOTP or backup code accepted.
+    if (user.twoFactorEnabled) {
+      if (!code) {
+        return res.status(401).json({
+          code: "2FA_REQUIRED",
+          error: "Authenticator code required.",
+        });
+      }
+      const ok = await verifyAnyCode(user, code);
+      if (!ok) {
+        return res.status(401).json({
+          code: "2FA_INVALID",
+          error: "Invalid code.",
+        });
+      }
     }
 
     const token = jwt.sign({ name: user.name, id: user.id }, JWT_SECRET_KEY, {
       expiresIn: UserTokenExpiresIn,
     });
 
-    // Step 8: Return the response
     return res.status(200).json({
       message: "Login Successful",
       token,
-     user:{id: user.id},
+      user: { id: user.id, twoFactorEnabled: user.twoFactorEnabled },
     });
   } catch (err) {
     console.error("Error during login:", err);

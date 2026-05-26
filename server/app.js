@@ -11,6 +11,8 @@ const { setupRoutes } = require("./Routes/setupRoutes");
 const db = require("./database");
 const infoRoutes = require("./infoRoutes");
 const { setupModels } = require("./Models/setModels");
+const autoTradeEngine = require("./Services/autoTradeEngine");
+const metrics = require("./Services/metrics");
 
 
 const app = express();
@@ -82,6 +84,17 @@ app.use(activityLogger);
 
 app.use("/", infoRoutes);
 
+// Prometheus scrape endpoint. Keep behind a firewall in production —
+// the surface is intentionally unauthenticated to match Prom conventions.
+app.get("/metrics", async (req, res) => {
+  try {
+    res.set("Content-Type", metrics.register.contentType);
+    res.end(await metrics.register.metrics());
+  } catch (err) {
+    res.status(500).send(`# metrics error: ${err.message}`);
+  }
+});
+
 setupRoutes(app);
 
 setupModels();
@@ -96,6 +109,14 @@ db.sync({})
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Listening on port : ${PORT}`);
+      autoTradeEngine.start();
     });
   })
   .catch((err) => console.log(err));
+
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, () => {
+    autoTradeEngine.stop();
+    process.exit(0);
+  });
+}
