@@ -15,5 +15,9 @@ router.get("/ledger", ctl.getLedger);
 router.get("/status", ctl.getStatus);
 router.get("/reconcile", ctl.reconcile);
 router.get("/positions", ctl.positions);
+router.get("/presets", ctl.getPresets);
+router.post("/webhook/test", ctl.testWebhook);
+router.post("/webhook/rotate-secret", ctl.rotateWebhookSecret);
+router.get("/webhook/deliveries", ctl.getWebhookDeliveries);
 
 module.exports = router;

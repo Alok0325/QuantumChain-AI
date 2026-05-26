@@ -1,53 +1,23 @@
 import React from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import './Page.css';
+import { Outlet } from 'react-router-dom';
 
+/**
+ * Layout wrapper for every authed/landing page. The header is fixed at 70 px
+ * tall, so we offset content by that much. The migrated pages bring their own
+ * gradient backdrop and header card; we just provide the top offset and a
+ * subtle ambient gradient.
+ */
 const Page = () => {
-  const location = useLocation();
-  const currentPath = location.pathname.split('/').pop();
-
-  const getPageTitle = () => {
-    switch (currentPath) {
-      case 'market':
-        return 'Cryptocurrency Market';
-      case 'trade':
-        return 'Trading Platform';
-      case 'p2p':
-        return 'P2P Trading';
-      case 'predictions':
-        return 'AI Predictions';
-      case 'about':
-        return 'About Us';
-      default:
-        return '';
-    }
-  };
-
-  const getPageDescription = () => {
-    switch (currentPath) {
-      case 'market':
-        return 'Real-time cryptocurrency prices and market data';
-      case 'trade':
-        return 'Advanced trading platform with quantum-powered features';
-      case 'p2p':
-        return 'Secure peer-to-peer cryptocurrency trading';
-      case 'predictions':
-        return 'AI-powered market predictions and analysis';
-      case 'about':
-        return 'Learn more about QuantumChain AI';
-      default:
-        return '';
-    }
-  };
-
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1 className="page-title">{getPageTitle()}</h1>
-        <p className="page-description">{getPageDescription()}</p>
-      </div>
-      
-      <div className="page-content">
+    <div className="relative w-full min-h-[calc(100vh-70px)] pt-20 overflow-hidden">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(circle at 20% 20%, rgba(110,231,255,0.06) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(184,132,255,0.06) 0%, transparent 50%)',
+        }}
+      />
+      <div className="relative z-10">
         <Outlet />
       </div>
     </div>

@@ -65,3 +65,10 @@ class NewsItem(BaseModel):
 class NewsResponse(BaseModel):
     symbol: str
     items: list[NewsItem]
+
+
+class PressureResponse(BaseModel):
+    symbol: str
+    buy_ratio_24h: Optional[float] = None
+    buy_ratio_4h: Optional[float] = None
+    interpretation: Optional[str] = None

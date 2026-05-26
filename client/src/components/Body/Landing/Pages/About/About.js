@@ -1,283 +1,237 @@
 import React, { useState } from 'react';
-import './About.css';
+
+const FEATURES = [
+  { icon: '⚛️',  title: 'Quantum-Powered Trading', body: 'Quantum-inspired and ensemble ML algorithms analyze market patterns and execute trades with low latency.' },
+  { icon: '🤖',  title: 'AI Predictions',          body: 'XGBoost / LSTM forecasts paired with Claude-generated trade rationale, refreshed continuously.' },
+  { icon: '🔒',  title: 'Encrypted Vault',         body: 'Per-user Binance API keys encrypted at rest with AES-256-GCM. Never returned to the browser.' },
+  { icon: '📊',  title: 'Real-time Analytics',     body: 'Live trade reconciliation, position rollup, model accuracy, and webhook event delivery.' },
+];
+
+const TECH = [
+  { title: 'Forecasting',  body: 'XGBoost on 13 engineered TA features by default, with an optional LSTM extra. Walk-forward retraining every 24 h.' },
+  { title: 'AI rationale', body: 'Claude (Anthropic) blends the numeric forecast, Binance taker buy/sell flow, and recent headlines into a hedged 2-3 sentence rationale with explicit risk factors.' },
+  { title: 'Safety',       body: 'Server-enforced hard limits, dry-run by default, four independent gates before any live order, per-user circuit breakers, kill-switch + daily loss limit.' },
+];
+
+const TEAM = [
+  { name: 'Alok Prajapati',          role: 'Team Leader',           bio: 'Full-stack and AI specialist. Leads platform architecture and the auto-trade engine.', image: '/images/team/Alok.jpeg' },
+  { name: 'Saurabh Shukla',          role: 'Database Specialist',   bio: 'Database architecture and distributed systems. Owns the ledger + reconciliation pipeline.',  image: '/images/team/Saurabh.jpeg' },
+  { name: 'Abhishek Kumar',          role: 'Frontend Developer',    bio: 'Frontend and design systems. Migrated the platform UI to Tailwind.',                       image: '/images/team/Abhi.jpeg' },
+  { name: 'Abhishek Kumar Maurya',   role: 'UI/UX Developer',       bio: 'Interaction design and accessibility.',                                                    image: '/images/team/Maurya.jpeg' },
+];
+
+const POSITIONS = [
+  ['', 'Select a position'],
+  ['frontend', 'Frontend Developer'],
+  ['backend', 'Backend Developer'],
+  ['fullstack', 'Full Stack Developer'],
+  ['ui-ux', 'UI/UX Designer'],
+  ['blockchain', 'Blockchain / ML Engineer'],
+];
 
 const CareerFormModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    position: '',
-    experience: '',
-    resume: null,
-    coverLetter: ''
+    name: '', email: '', position: '', experience: '', resume: null, coverLetter: '',
   });
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: files ? files[0] : value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: files ? files[0] : value }));
   };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle form submission here
-    console.log('Form submitted:', formData);
-    onClose();
-  };
+  const handleSubmit = (e) => { e.preventDefault(); console.log('Form submitted:', formData); onClose(); };
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="career-modal">
-        <button className="close-button" onClick={onClose}>×</button>
-        <h2>Join Our Team</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="name">Full Name</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="position">Desired Position</label>
+    <div
+      className="fixed inset-0 z-[1000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onMouseDown={onClose}
+      role="dialog" aria-modal="true"
+    >
+      <div
+        className="relative w-full max-w-xl rounded-2xl border border-white/10 p-7 max-h-[90vh] overflow-y-auto text-slate-100 shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
+        style={{ background: 'linear-gradient(180deg, rgba(36,40,58,0.95), rgba(20,22,32,0.95))' }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl leading-none"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          ×
+        </button>
+        <h2 className="text-2xl font-bold mb-5 qc-title-gradient">Join Our Team</h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {[
+            { id: 'name',  label: 'Full Name', type: 'text',   required: true },
+            { id: 'email', label: 'Email',     type: 'email',  required: true },
+          ].map((f) => (
+            <label key={f.id} className="flex flex-col gap-1.5">
+              <span className="qc-label-up">{f.label}</span>
+              <input
+                id={f.id} name={f.id} type={f.type} required={f.required}
+                className="qc-input" value={formData[f.id]} onChange={handleChange}
+              />
+            </label>
+          ))}
+          <label className="flex flex-col gap-1.5">
+            <span className="qc-label-up">Desired Position</span>
             <select
-              id="position"
-              name="position"
-              value={formData.position}
-              onChange={handleChange}
-              required
+              id="position" name="position" required
+              className="qc-input" value={formData.position} onChange={handleChange}
             >
-              <option value="">Select a position</option>
-              <option value="frontend">Frontend Developer</option>
-              <option value="backend">Backend Developer</option>
-              <option value="fullstack">Full Stack Developer</option>
-              <option value="ui-ux">UI/UX Designer</option>
-              <option value="blockchain">Blockchain Developer</option>
+              {POSITIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
-          </div>
-          <div className="form-group">
-            <label htmlFor="experience">Years of Experience</label>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="qc-label-up">Years of Experience</span>
             <input
-              type="number"
-              id="experience"
-              name="experience"
-              min="0"
-              max="50"
-              value={formData.experience}
-              onChange={handleChange}
-              required
+              id="experience" name="experience" type="number" min="0" max="50" required
+              className="qc-input" value={formData.experience} onChange={handleChange}
             />
-          </div>
-          <div className="form-group">
-            <label htmlFor="resume">Resume (PDF)</label>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="qc-label-up">Resume (PDF)</span>
             <input
-              type="file"
-              id="resume"
-              name="resume"
-              accept=".pdf"
+              id="resume" name="resume" type="file" accept=".pdf" required
+              className="text-sm text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-cyan-300/15 file:text-cyan-300 file:font-medium file:cursor-pointer"
               onChange={handleChange}
-              required
             />
-          </div>
-          <div className="form-group">
-            <label htmlFor="coverLetter">Cover Letter</label>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="qc-label-up">Cover Letter</span>
             <textarea
-              id="coverLetter"
-              name="coverLetter"
-              value={formData.coverLetter}
-              onChange={handleChange}
-              rows="4"
-              required
-            ></textarea>
-          </div>
-          <button type="submit" className="submit-button">Submit Application</button>
+              id="coverLetter" name="coverLetter" rows="4" required
+              className="qc-input resize-y" value={formData.coverLetter} onChange={handleChange}
+            />
+          </label>
+          <button type="submit" className="qc-btn qc-btn-primary self-stretch mt-2">Submit Application</button>
         </form>
       </div>
     </div>
   );
 };
 
+const Section = ({ title, children, intro }) => (
+  <section className="max-w-[1200px] mx-auto px-6 py-12">
+    <h2 className="text-3xl font-bold text-center mb-3">{title}</h2>
+    {intro && <p className="text-center text-slate-300 max-w-3xl mx-auto mb-8 leading-relaxed">{intro}</p>}
+    {children}
+  </section>
+);
+
 const About = () => {
   const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
-  
-  const features = [
-    {
-      title: 'Quantum-Powered Trading',
-      description: 'Leveraging quantum computing algorithms to analyze market patterns and execute trades with unprecedented speed and accuracy.',
-      icon: '⚛️'
-    },
-    {
-      title: 'AI Predictions',
-      description: 'Advanced machine learning models that predict market movements and provide actionable insights for traders.',
-      icon: '🤖'
-    },
-    {
-      title: 'Secure P2P Trading',
-      description: 'Decentralized peer-to-peer trading platform with advanced security measures and escrow protection.',
-      icon: '🔒'
-    },
-    {
-      title: 'Real-time Analytics',
-      description: 'Comprehensive market analysis tools with real-time data visualization and technical indicators.',
-      icon: '📊'
-    }
-  ];
-
-  const team = [
-    {
-      name: 'Alok Prajapati',
-      role: 'Team Leader',
-      bio: 'Full Stack Developer and AI Specialist with expertise in building scalable applications and implementing AI solutions. Leading the team in developing innovative blockchain and AI-powered features.',
-      image: '/images/team/Alok.jpeg'
-    },
-    {
-      name: 'Saurabh Shukla',
-      role: 'Database Specialist',
-      bio: 'Expert in database architecture and optimization, ensuring robust and efficient data management for the platform. Specializes in blockchain data structures and distributed systems.',
-      image: '/images/team/Saurabh.jpeg'
-    },
-    {
-      name: 'Abhishek Kumar',
-      role: 'Frontend Developer',
-      bio: 'Skilled Frontend Developer with focus on creating intuitive and responsive user interfaces. Expertise in modern JavaScript frameworks and UI/UX best practices.',
-      image: '/images/team/Abhi.jpeg'
-    },
-    {
-      name: 'Abhishek Kumar Maurya',
-      role: 'UI/UX Developer',
-      bio: 'Creative UI/UX Developer dedicated to crafting beautiful and user-friendly interfaces. Specializes in modern design patterns and interactive user experiences.',
-      image: '/images/team/Maurya.jpeg'
-    }
-  ];
 
   return (
-    <div className="about-container">
-      <section className="about-hero">
-        <h1>Revolutionizing Crypto Trading with Quantum Technology</h1>
-        <p className="hero-subtitle">
-          QuantumChain AI combines the power of quantum computing, artificial intelligence, and blockchain technology
-          to create the next generation of cryptocurrency trading platforms.
-        </p>
+    <div className="text-slate-100">
+      <section className="relative overflow-hidden pt-32 pb-12 px-6">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(circle at 20% 20%, rgba(110,231,255,0.12) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(184,132,255,0.12) 0%, transparent 50%)',
+          }}
+        />
+        <div className="relative max-w-[1100px] mx-auto text-center">
+          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight m-0 mb-4 qc-title-gradient">
+            Revolutionizing Crypto Trading with AI
+          </h1>
+          <p className="text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
+            QuantumChain AI combines machine-learning forecasts with LLM-generated
+            rationale and safety-first execution to give traders a transparent,
+            auditable edge.
+          </p>
+        </div>
       </section>
 
-      <section className="about-mission">
-        <h2>Our Mission</h2>
-        <p>
-          At QuantumChain AI, we're dedicated to revolutionizing the cryptocurrency trading landscape by
-          harnessing the power of quantum computing and artificial intelligence. Our platform provides
-          traders with unprecedented speed, accuracy, and security in their trading operations.
+      <Section title="Our Mission">
+        <p className="max-w-3xl mx-auto text-center text-slate-300 leading-relaxed">
+          We believe AI-assisted trading should be transparent, opt-in, and
+          safety-bounded by default. Every decision the engine takes is logged
+          to a per-user trade ledger, reconcilable against the exchange,
+          accompanied by a hedged Claude rationale, and gated by limits the
+          user — not the platform — owns.
         </p>
-      </section>
+      </Section>
 
-      <section className="about-features">
-        <h2>Key Features</h2>
-        <div className="features-grid">
-          {features.map((feature, index) => (
-            <div key={index} className="feature-card">
-              <div className="feature-icon">{feature.icon}</div>
-              <h3>{feature.title}</h3>
-              <p>{feature.description}</p>
+      <Section title="Key Features">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {FEATURES.map((f) => (
+            <div key={f.title} className="qc-card text-center transition hover:-translate-y-1">
+              <div className="text-3xl mb-2">{f.icon}</div>
+              <h3 className="m-0 mb-2 text-base font-semibold text-cyan-300">{f.title}</h3>
+              <p className="m-0 text-sm text-slate-300 leading-relaxed">{f.body}</p>
             </div>
           ))}
         </div>
-      </section>
+      </Section>
 
-      <section className="about-technology">
-        <h2>Our Technology</h2>
-        <div className="tech-stack">
-          <div className="tech-item">
-            <h3>Quantum Computing</h3>
-            <p>
-              Our proprietary quantum algorithms process market data at speeds impossible for classical computers,
-              enabling real-time analysis of complex market patterns.
-            </p>
-          </div>
-          <div className="tech-item">
-            <h3>Artificial Intelligence</h3>
-            <p>
-              Advanced machine learning models continuously learn from market data to provide accurate
-              predictions and trading signals.
-            </p>
-          </div>
-          <div className="tech-item">
-            <h3>Blockchain Security</h3>
-            <p>
-              State-of-the-art security measures ensure safe and transparent trading operations
-              for all platform users.
-            </p>
-          </div>
+      <Section title="Our Technology">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {TECH.map((t) => (
+            <div key={t.title} className="qc-card">
+              <h3 className="m-0 mb-2 text-base font-semibold text-cyan-300">{t.title}</h3>
+              <p className="m-0 text-sm text-slate-300 leading-relaxed">{t.body}</p>
+            </div>
+          ))}
         </div>
-      </section>
+      </Section>
 
-      <section className="about-team">
-        <h2>Meet Our Team</h2>
-        <p className="team-intro">
-          Our talented team of developers and specialists work together to bring you the most advanced
-          crypto trading platform.
-        </p>
-        <div className="team-grid">
-          {team.map((member, index) => (
-            <div key={index} className="team-card">
-              <div className="team-image">
-                <img src={member.image} alt={member.name} />
+      <Section
+        title="Meet Our Team"
+        intro="The team behind the architecture, ledger pipeline, frontend, and design."
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {TEAM.map((m) => (
+            <div key={m.name} className="qc-card text-center flex flex-col">
+              <div className="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden border-2 border-cyan-300/40 shadow-[0_0_15px_rgba(110,231,255,0.2)]">
+                <img
+                  src={m.image}
+                  alt={m.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=6ee7ff&color=0b1018&size=96`;
+                  }}
+                />
               </div>
-              <h3>{member.name}</h3>
-              <span className="team-role">{member.role}</span>
-              <p>{member.bio}</p>
-              <div className="team-social">
-                <a href="#" className="social-link github" title="GitHub">
-                  <i className="fab fa-github"></i>
-                </a>
-                <a href="#" className="social-link linkedin" title="LinkedIn">
-                  <i className="fab fa-linkedin"></i>
-                </a>
+              <h3 className="m-0 mb-1 text-base font-semibold">{m.name}</h3>
+              <span className="text-cyan-300 text-xs font-medium uppercase tracking-wider mb-2">{m.role}</span>
+              <p className="m-0 text-sm text-slate-400 leading-relaxed flex-1">{m.bio}</p>
+              <div className="flex gap-3 justify-center mt-4 pt-3 border-t border-white/[0.06] text-slate-500 text-sm">
+                <span title="GitHub">GitHub</span>
+                <span className="text-slate-600">·</span>
+                <span title="LinkedIn">LinkedIn</span>
               </div>
             </div>
           ))}
         </div>
-      </section>
+      </Section>
 
-      <section className="about-cta">
-        <h2>Join the Quantum Revolution</h2>
-        <p>
-          Experience the future of cryptocurrency trading with QuantumChain AI.
-          Start your journey today and be part of the quantum trading revolution.
-        </p>
-        <div className="cta-buttons">
-          <button 
-            className="cta-button primary"
-            onClick={() => setIsCareerModalOpen(true)}
-          >
-            Get Started
-          </button>
-          <button className="cta-button secondary">Learn More</button>
+      <Section title="Join the Revolution">
+        <div
+          className="qc-card text-center px-8 py-12 max-w-3xl mx-auto"
+          style={{ background: 'linear-gradient(135deg, rgba(110,231,255,0.12), rgba(184,132,255,0.12))' }}
+        >
+          <p className="text-slate-300 m-0 mb-6 leading-relaxed">
+            Hiring across full-stack, ML, and design. If you want to build
+            transparent, audit-friendly AI trading infrastructure, apply below.
+          </p>
+          <div className="flex gap-3 justify-center flex-wrap">
+            <button type="button" className="qc-btn qc-btn-primary" onClick={() => setIsCareerModalOpen(true)}>
+              Apply
+            </button>
+            <a href="/predictions" className="qc-btn qc-btn-ghost">
+              See the platform
+            </a>
+          </div>
         </div>
-      </section>
+      </Section>
 
-      <CareerFormModal 
-        isOpen={isCareerModalOpen} 
-        onClose={() => setIsCareerModalOpen(false)} 
-      />
+      <CareerFormModal isOpen={isCareerModalOpen} onClose={() => setIsCareerModalOpen(false)} />
     </div>
   );
 };
 
-export default About; 
+export default About;

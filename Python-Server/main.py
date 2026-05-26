@@ -14,14 +14,17 @@ from schemas import (
     NewsItem,
     NewsResponse,
     PredictionResponse,
+    PressureResponse,
     RationaleRequest,
     RationaleResponse,
     TrainRequest,
     TrainResponse,
 )
 from services.llm_rationale import RationaleService
+from services.market_pressure import fetch_taker_pressure
 from services.news_feed import fetch_news
 from services.predictor import Predictor
+from services import scheduler
 
 load_dotenv()
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -35,7 +38,9 @@ async def lifespan(_: FastAPI):
     global predictor, rationale
     predictor = Predictor()
     rationale = RationaleService()
+    scheduler.start(predictor)
     yield
+    await scheduler.stop()
 
 
 app = FastAPI(
@@ -103,6 +108,19 @@ async def news(symbol: str, max_items: int = 5) -> NewsResponse:
         symbol=symbol.upper(),
         items=[NewsItem(**it) for it in items],
     )
+
+
+@app.get("/scheduler")
+async def scheduler_status():
+    return scheduler.status()
+
+
+@app.get("/pressure", response_model=PressureResponse)
+async def pressure(symbol: str) -> PressureResponse:
+    result = await fetch_taker_pressure(symbol)
+    if result is None:
+        return PressureResponse(symbol=symbol.upper())
+    return PressureResponse(**result)
 
 
 @app.get("/accuracy", response_model=AccuracyResponse)

@@ -4,8 +4,54 @@ const AutoTradeConfig = require("../../Models/Trading/AutoTradeConfig");
 const TradeLedger = require("../../Models/Trading/TradeLedger");
 const UserApiKeys = require("../../Models/User/UserApiKeys");
 const User = require("../../Models/User/users");
+const WebhookDelivery = require("../../Models/Trading/WebhookDelivery");
 const binance = require("../../Services/binanceExchange");
+const webhookDispatcher = require("../../Services/webhookDispatcher");
 const { decrypt } = require("../../Utils/crypto");
+
+// Phase 12: opinionated one-click profiles. Server-owned so the limits stay
+// within HARD_LIMITS even if a client tampers with the request.
+const STRATEGY_PRESETS = Object.freeze([
+  {
+    id: "conservative",
+    name: "Conservative",
+    description: "Tight stops, small positions, high-confidence-only signals.",
+    config: {
+      maxPositionUsd: 100,
+      dailyLossLimitUsd: 25,
+      stopLossPct: 1.5,
+      takeProfitPct: 3,
+      minConfidence: "high",
+      allowedSymbols: ["BTC", "ETH"],
+    },
+  },
+  {
+    id: "moderate",
+    name: "Moderate",
+    description: "Balanced risk and reward. Most users start here.",
+    config: {
+      maxPositionUsd: 500,
+      dailyLossLimitUsd: 100,
+      stopLossPct: 2,
+      takeProfitPct: 4,
+      minConfidence: "medium",
+      allowedSymbols: ["BTC", "ETH", "SOL", "BNB"],
+    },
+  },
+  {
+    id: "aggressive",
+    name: "Aggressive",
+    description: "Larger positions, looser stops, takes lower-confidence signals.",
+    config: {
+      maxPositionUsd: 2000,
+      dailyLossLimitUsd: 500,
+      stopLossPct: 3,
+      takeProfitPct: 6,
+      minConfidence: "low",
+      allowedSymbols: ["BTC", "ETH", "SOL", "BNB", "ATOM"],
+    },
+  },
+]);
 
 const PUBLIC_FIELDS = [
   "enabled",
@@ -21,6 +67,8 @@ const PUBLIC_FIELDS = [
   "killSwitchReason",
   "liveAcknowledgedAt",
   "consecutiveFailures",
+  "webhookUrl",
+  "webhookEvents",
   "updatedAt",
 ];
 
@@ -45,6 +93,11 @@ const serialize = (cfg) => {
     hardLimits: AutoTradeConfig.HARD_LIMITS,
     liveAckValid: isLiveAckValid(json),
     liveAllowedByServer: process.env.ALLOW_LIVE_TRADING === "true",
+    // Never return the raw secret on a normal read; only the mask.
+    webhookSecretMask: json.webhookSecret
+      ? webhookDispatcher.maskSecret(json.webhookSecret)
+      : null,
+    webhookSigned: Boolean(json.webhookSecret),
   };
 };
 
@@ -84,6 +137,8 @@ exports.updateConfig = async (req, res) => {
     "takeProfitPct",
     "minConfidence",
     "allowedSymbols",
+    "webhookUrl",
+    "webhookEvents",
   ];
 
   const patch = {};
@@ -145,9 +200,26 @@ exports.updateConfig = async (req, res) => {
     // Flipping away from live invalidates the ack (cheap defence in depth).
     if (patch.mode && patch.mode !== "live") patch.liveAcknowledgedAt = null;
 
-    // Resetting kill switch via mode change is not allowed; that's its own endpoint.
+    // Auto-generate the webhook HMAC secret the first time a URL is saved.
+    let revealedSecret = null;
+    if (
+      patch.webhookUrl &&
+      patch.webhookUrl !== "" &&
+      !cfg.webhookSecret
+    ) {
+      revealedSecret = webhookDispatcher.generateSecret();
+      patch.webhookSecret = revealedSecret;
+    }
+    // Clearing the URL also clears the secret + event filter.
+    if (patch.webhookUrl === "" || patch.webhookUrl === null) {
+      patch.webhookSecret = null;
+      patch.webhookEvents = null;
+    }
+
     await cfg.update(patch);
-    return res.json({ success: true, data: serialize(cfg) });
+    const data = serialize(cfg);
+    if (revealedSecret) data.webhookSecret = revealedSecret;
+    return res.json({ success: true, data });
   } catch (err) {
     if (err.name === "SequelizeValidationError") {
       return res.status(400).json({
@@ -203,11 +275,16 @@ exports.acknowledgeLive = async (req, res) => {
 exports.engageKillSwitch = async (req, res) => {
   try {
     const cfg = await findOrCreateConfig(req.user.id);
+    const reason = req.body?.reason || "User triggered kill switch";
     await cfg.update({
       enabled: false,
       killSwitchTriggered: true,
       killSwitchAt: new Date(),
-      killSwitchReason: req.body?.reason || "User triggered kill switch",
+      killSwitchReason: reason,
+    });
+    webhookDispatcher.dispatch(cfg, "kill_switch_engaged", {
+      reason,
+      trigger: "user",
     });
     return res.json({ success: true, data: serialize(cfg) });
   } catch (err) {
@@ -472,6 +549,74 @@ exports.reconcile = async (req, res) => {
       ledgerOnly,
     },
   });
+};
+
+exports.testWebhook = async (req, res) => {
+  try {
+    const cfg = await findOrCreateConfig(req.user.id);
+    if (!cfg.webhookUrl) {
+      return res.status(400).json({
+        success: false,
+        code: "WEBHOOK_NOT_CONFIGURED",
+        message: "Set a webhookUrl first.",
+      });
+    }
+    const result = await webhookDispatcher.dispatchTest({
+      userId: req.user.id,
+      webhookUrl: cfg.webhookUrl,
+      webhookSecret: cfg.webhookSecret,
+    });
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    return res
+      .status(err.status || 502)
+      .json({ success: false, message: `Webhook test failed: ${err.message}` });
+  }
+};
+
+exports.getWebhookDeliveries = async (req, res) => {
+  const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+  try {
+    const rows = await WebhookDelivery.findAll({
+      where: { userId: req.user.id },
+      order: [["createdAt", "DESC"]],
+      limit,
+    });
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error("getWebhookDeliveries failed", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to load deliveries", error: err.message });
+  }
+};
+
+/** Rotate the webhook HMAC secret. Returns the new value exactly once. */
+exports.rotateWebhookSecret = async (req, res) => {
+  try {
+    const cfg = await findOrCreateConfig(req.user.id);
+    if (!cfg.webhookUrl) {
+      return res.status(400).json({
+        success: false,
+        code: "WEBHOOK_NOT_CONFIGURED",
+        message: "Set a webhookUrl first.",
+      });
+    }
+    const next = webhookDispatcher.generateSecret();
+    await cfg.update({ webhookSecret: next });
+    const data = serialize(cfg);
+    data.webhookSecret = next; // one-time reveal
+    return res.json({ success: true, data });
+  } catch (err) {
+    console.error("rotateWebhookSecret failed", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to rotate webhook secret", error: err.message });
+  }
+};
+
+exports.getPresets = (req, res) => {
+  return res.json({ success: true, data: { presets: STRATEGY_PRESETS } });
 };
 
 exports.getStatus = async (req, res) => {

@@ -261,14 +261,174 @@ API keys** and trade through our UI, augmented by an **AI layer** that:
   skips / failures), last action timestamp. Engine-side view only; for
   exchange-of-truth still use `/trading/reconcile`.
 
-### Phase 11 — Outstanding
-- [ ] Convert remaining older pages to Tailwind (Market, Portfolio,
-  SpotTrade, P2P, About, Profile, Home, BinanceIntegration, AdminPanel).
-- [ ] Full TypeScript migration of `client/`.
-- [ ] On-chain sentiment (exchange in/outflows, large-holder activity).
-- [ ] Walk-forward training: schedule the engine to retrain models every
-  N days against a rolling window of recent data.
-- [ ] Positions UI page that consumes `/trading/positions`.
+### Phase 11 — Walk-forward + positions UI + landing Tailwind
+- [x] **Walk-forward retraining scheduler.** `Python-Server/services/scheduler.py`
+  discovers symbols with a trained model on disk for the active backend
+  (xgb / lstm / ensemble), then retrains anything older than
+  `RETRAIN_INTERVAL_HOURS` (default 24h). The loop runs every
+  `RETRAIN_LOOP_SEC` (default 1h), respects `RETRAIN_INITIAL_DELAY_SEC`
+  (60s warm-up after lifespan boot), and ships an in-progress guard
+  + per-symbol last-retrain timestamps. Status surface at `GET /scheduler`.
+  Toggle off with `RETRAIN_ENABLED=false`. Since both XGBoost and LSTM
+  trainers re-read model files on each predict, retraining is picked up
+  by the next inference without restart.
+- [x] **Positions UI.** New `/settings/positions` page consumes
+  `GET /trading/positions`. Window selector (7d / 30d / 90d / 1y), summary
+  card (symbols, fills, total ledger actions, realised P/L), and a
+  per-symbol table (net qty, buy/sell qty, avg entry/exit, realised P/L,
+  fills, dry-runs, skips, failures, last action). Built natively in
+  Tailwind. Linked from the page header back to predictions and to
+  reconcile for cross-checks.
+- [x] **Home + Header migrated to Tailwind.** Two of the largest legacy
+  CSS files (738 lines combined) replaced with Tailwind utilities.
+  Header gained API Keys + Two-Factor links in the profile dropdown.
+  Home page reworked into 6 sections: hero with feature cards,
+  illustrative market preview, "why" grid, stats, tools (which now
+  point at real pages: `/trade`, `/predictions`, `/settings/api-keys`),
+  and a CTA banner.
+
+### Phase 12 — Flow signal, strategy presets, Profile Tailwind
+- [x] **Binance taker buy/sell ratio** as a flow signal threaded into the
+  Claude rationale. `Python-Server/services/market_pressure.py` aggregates
+  last 24h + last 4h of 1h klines (using `takerBuyBaseAssetVolume / volume`),
+  classifies into `{strong buy, elevated buy, balanced, elevated sell,
+  strong sell}` with an "accelerating" qualifier when 4h diverges ≥2pp from
+  24h. Cached 5 min in the distributed cache. The rationale system prompt
+  now requires agreement across forecast / news / flow before granting
+  `high` confidence. New `GET /pressure?symbol=X` endpoint exposes it.
+- [x] **Strategy presets** (`GET /trading/presets`). Three opinionated
+  one-click profiles — conservative ($100 / 1.5% SL / high confidence),
+  moderate ($500 / 2% SL / medium / 4 symbols), aggressive ($2k / 3% SL /
+  low / 5 symbols). Server-owned so the values stay within `HARD_LIMITS`.
+  The Predictions page renders them as buttons; `useAutoTradeConfig` gets
+  an `applyPreset(id)` action that PUTs the preset's config and refreshes
+  state. Falls back to a local copy when the server is offline.
+- [x] **Profile page on Tailwind.** 700-line Profile.js + 580-line
+  Profile.css rewritten as Tailwind. Common patterns factored into local
+  `Field` / `FormRow` / `KycSection` components so the JSX stays readable.
+  Profile + Binance + Security + KYC tabs all migrated; KYC keeps every
+  field (PAN / Aadhar / address proof / bank). Profile.css deleted.
+
+### Phase 13 — Backtest UI, webhooks, About on Tailwind
+- [x] **Backtest accuracy UI.** New `/settings/accuracy` page consumes the
+  existing FastAPI `/accuracy` endpoint in parallel for every supported
+  symbol. Lookback selector (7d / 14d / 30d / 90d), per-symbol horizontal
+  accuracy bars with a 50% baseline tick, summary card showing trained
+  count + average accuracy, and a per-row "Train / Retrain" button that
+  POSTs `/train`. Educational footnote on how to read the numbers.
+- [x] **Webhook alerts.** New `webhookUrl` field on `AutoTradeConfig`
+  (https-only validator). New `Services/webhookDispatcher.js` posts a
+  small JSON envelope (`{ event, userId, timestamp, data }`) — no secrets.
+  Engine dispatches on: `kill_switch_engaged` (user-triggered, consecutive
+  failures, or daily-loss-limit), `live_order_filled` (buy + sell paths).
+  Fire-and-forget with a 5s timeout. Per-(user, url) circuit breaks after
+  5 failures for 30 min so a flapping endpoint can't pin the engine event
+  loop. `POST /trading/webhook/test` for explicit sync test from the UI.
+  Predictions page gained a webhook URL field + Save / Test buttons.
+- [x] **About page on Tailwind.** Career application modal + four content
+  sections rewritten. Each old social-link `href="#"` swapped for a
+  non-interactive span (a11y warning gone). `About.css` deleted.
+- [x] **Header expanded** — the profile dropdown now lists every settings
+  page that exists (Positions, Accuracy, Reconcile, API Keys, Two-Factor).
+
+### Phase 14 — Signed webhooks + event prefs + more Tailwind
+- [x] **HMAC-SHA256 webhook signing.** Auto-generated 64-char hex secret
+  on first save of `webhookUrl`; revealed to the user **exactly once**.
+  Every dispatch includes `X-QC-Event: <name>` and
+  `X-QC-Signature: sha256=<hex>` so receivers can verify origin. New
+  `POST /trading/webhook/rotate-secret` for explicit rotation; clearing
+  the URL wipes the secret + event prefs.
+- [x] **Per-event notification preferences.** New `webhookEvents` JSON
+  on the config (subset of `HARD_LIMITS.WEBHOOK_EVENTS`; null/empty = all).
+  Dispatcher filters server-side. UI: per-event toggle chips on the
+  Predictions page.
+- [x] **Page wrapper + Market on Tailwind.** Page is now a minimal
+  `pt-20` wrapper with an ambient gradient; per-page headers/titles are
+  owned by each page now. Market keeps its `lightweight-charts` and
+  WebSocket integration but the surrounding markup, table, and timeframe
+  selector are pure Tailwind. Two more CSS files deleted.
+
+### Phase 15 — Webhook replay protection + delivery log + Portfolio Tailwind
+- [x] **Webhook replay protection.** Every dispatch now carries an
+  `X-QC-Timestamp: <iso>` header. The HMAC signature is computed over
+  `${timestamp}.${body}` (not just the body) so an attacker can't swap
+  the timestamp without invalidating the signature. Receivers should
+  reject deliveries whose timestamp is more than ~5 min off wall-clock
+  to defeat replays.
+- [x] **Webhook delivery audit log.** New `WebhookDelivery` Sequelize
+  model captures each attempt: `event`, `url`, `statusCode`, `delivered`,
+  `responseMs`, `error`. Dispatcher writes a row at the end of every
+  attempt (success or failure, best-effort — audit failures don't
+  cascade). New `GET /trading/webhook/deliveries?limit=N` endpoint.
+  Predictions page shows the latest 50 deliveries in a collapsible
+  table with status-coded badges + refresh button.
+- [x] **Portfolio + BinanceIntegration on Tailwind.** 920-line pair
+  rewritten. Portfolio keeps its Chart.js line chart (recolored to the
+  brand cyan), reworks holdings + transactions into proper styled
+  tables with allocation bars. BinanceIntegration becomes a single
+  `qc-card` with a sample-balance table, action buttons, recent-trades
+  list, and an in-place transaction modal. Both CSS files deleted.
+
+### Phase 16 — Webhook retries + prune + SpotTrade/P2P Tailwind
+- [x] **Webhook retries with backoff**. Dispatcher now retries failed
+  deliveries up to `WEBHOOK_MAX_RETRIES` (default 2 retries → 3 total
+  attempts) with exponential backoff + full jitter. 4xx (except 429)
+  are non-retryable. Retry counts are surfaced in engine logs as
+  `attempts`. Audit row records only the final outcome (delivered or
+  not), not each intermediate attempt.
+- [x] **Audit retention**. After every `WebhookDelivery.create`, the
+  dispatcher prunes the user's row set: drop anything older than
+  `WEBHOOK_AUDIT_KEEP_DAYS` (default 30), then drop the oldest rows
+  beyond `WEBHOOK_AUDIT_KEEP_ROWS` (default 1000). All best-effort —
+  audit failures never cascade into trade execution.
+- [x] **SpotTrade + P2P on Tailwind.** SpotTrade keeps the
+  `lightweight-charts` candle/volume series and WebSocket streaming;
+  surrounding markup (three-column layout, trading-pair sidebar,
+  order book, order form, recent trades) is pure Tailwind. P2P keeps
+  the buy/sell tabs, filters, listings table, top-traders grid, and
+  modal-driven trade flow but in clean Tailwind utilities.
+  `SpotTrade.css` (441 lines) and `P2P.css` (844 lines) deleted.
+
+### Phase 17 — Admin shell + TypeScript foothold
+- [x] **AdminPanel on Tailwind.** The `/admin/*` shell — sidebar nav,
+  header with notifications/help, content area — rewritten with
+  Tailwind. Other admin sub-pages (User Management, KYC Verification,
+  Transaction History, Platform Settings) keep their existing
+  `AdminComponents.css`; they live behind admin auth and are mock-data
+  scaffolds for future product work. `AdminPanel.css` deleted.
+- [x] **TypeScript foothold.** Added `typescript@^5.4`,
+  `@types/react`, `@types/react-dom`, `@types/node`. New
+  `client/tsconfig.json` with `allowJs: true` and `strict: false` so
+  JS and TS coexist. Removed conflicting `jsconfig.json` so CRA picks
+  up TS.
+- [x] **Shared domain types** in `client/src/types/index.ts`:
+  `AutoTradeConfig`, `StrategyPreset`, `Candle`, `PredictionResponse`,
+  `RationaleResponse`, `NewsItem`, `PressureResponse`, `AccuracyResponse`,
+  `TradeLedgerRow`, `PositionRow`, `ReconcileOrder`, `WebhookDelivery`,
+  `ApiKeysBinanceStatus`, `TwoFactorStatus/Setup`, `AuthUser`, …
+- [x] **Typed services + hook**: `services/predictionService.ts`,
+  `services/autoTradeService.ts`, and `hooks/useAutoTradeConfig.ts`
+  rewritten with proper generics on the axios unwrappers and types on
+  every public method's args and return. The other six service files
+  stay as `.js` and TS treats them as implicit-any modules — clean
+  incremental upgrade path.
+- [x] **Identified dead UI surface** (`UI/Logo`, `UI/Spinner`,
+  `UI/Alert/*`, `UI/PageNotFound`): not imported anywhere live in the
+  React tree (the routes that consumed `PageNotFound` aren't mounted).
+  Intentionally left alone. Recommend deleting in a cleanup pass.
+
+### Phase 18 — Outstanding (deferrable indefinitely)
+- [ ] Type the remaining six service files
+  (`apiKeysService`, `accuracyService`, `positionsService`,
+  `reconcileService`, `twoFactorService`, `binanceService`).
+- [ ] Type the React components themselves (`.jsx` → `.tsx`).
+- [ ] Convert the inner admin sub-pages (KYC Verification, Transaction
+  History, Platform Settings, User Management) to Tailwind. They're
+  behind `/admin/*` and mock-data only.
+- [ ] Delete dead UI primitives (`Logo`, `Spinner`, `Alert/*`,
+  `PageNotFound`) — none are referenced from a mounted route.
+- [ ] On-chain sentiment via a paid feed (Glassnode / Santiment) —
+  requires an external API key.
 
 ### Phase 5 — Production
 - [ ] 2FA on user accounts.

@@ -3,6 +3,7 @@ const User = require("./User/users");
 const UserApiKeys = require("./User/UserApiKeys");
 const AutoTradeConfig = require("./Trading/AutoTradeConfig");
 const TradeLedger = require("./Trading/TradeLedger");
+const WebhookDelivery = require("./Trading/WebhookDelivery");
 
 exports.setupModels = async () => {
   User.hasOne(UserProfile);
@@ -19,4 +20,8 @@ exports.setupModels = async () => {
   // Append-only ledger of trade actions
   User.hasMany(TradeLedger, { foreignKey: { name: "userId", allowNull: false }, onDelete: "CASCADE" });
   TradeLedger.belongsTo(User, { foreignKey: "userId" });
+
+  // Webhook delivery audit log (nullable userId — test dispatches before login wire-up)
+  User.hasMany(WebhookDelivery, { foreignKey: { name: "userId", allowNull: true }, onDelete: "CASCADE" });
+  WebhookDelivery.belongsTo(User, { foreignKey: "userId" });
 };

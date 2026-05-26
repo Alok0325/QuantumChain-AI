@@ -27,6 +27,7 @@ const UserApiKeys = require("../Models/User/UserApiKeys");
 const { decrypt } = require("../Utils/crypto");
 const binance = require("./binanceExchange");
 const metrics = require("./metrics");
+const webhook = require("./webhookDispatcher");
 const { withBreaker, CircuitOpenError } = require("./circuitBreaker");
 
 const CONFIDENCE_RANK = { low: 1, medium: 2, high: 3 };
@@ -77,6 +78,11 @@ async function bumpFailure(cfg, reason) {
     patch.killSwitchReason = `Auto kill: ${next} consecutive failures (${reason.slice(0, 80)})`;
     log("warn", "consecutive_failure_kill_switch", { userId: cfg.userId, reason });
     metrics.killSwitches.inc({ reason_bucket: "consecutive_failures" });
+    webhook.dispatch(cfg, "kill_switch_engaged", {
+      reason: patch.killSwitchReason,
+      trigger: "consecutive_failures",
+      failures: next,
+    });
   }
   await cfg.update(patch);
 }
@@ -353,6 +359,12 @@ async function doLiveBuy({
   log("info", "live_buy_filled", {
     userId: cfg.userId, symbol, orderId: order.orderId, avgPrice, qty: filledQty,
   });
+  webhook.dispatch(cfg, "live_order_filled", {
+    symbol, side: "buy", orderId: String(order.orderId),
+    avgPrice: Number(avgPrice.toFixed(8)),
+    qty: Number(filledQty),
+    notionalUsd: Number(filledQuote.toFixed(2)),
+  });
 
   // Bracket with an OCO sell
   try {
@@ -482,6 +494,13 @@ async function doLiveSell({
     userId: cfg.userId, symbol, orderId: order.orderId, avgPrice, qty: filledQty,
     realizedPnlUsd,
   });
+  webhook.dispatch(cfg, "live_order_filled", {
+    symbol, side: "sell", orderId: String(order.orderId),
+    avgPrice: Number(avgPrice.toFixed(8)),
+    qty: Number(filledQty),
+    notionalUsd: Number(filledQuote.toFixed(2)),
+    realizedPnlUsd: realizedPnlUsd != null ? Number(realizedPnlUsd.toFixed(2)) : null,
+  });
 
   await resetFailures(cfg);
 }
@@ -500,14 +519,20 @@ async function evaluateUser(cfg) {
     0
   );
   if (pnlToday <= -Number(cfg.dailyLossLimitUsd)) {
+    const reason = `Daily loss limit hit (P/L $${pnlToday.toFixed(2)})`;
     await cfg.update({
       enabled: false,
       killSwitchTriggered: true,
       killSwitchAt: new Date(),
-      killSwitchReason: `Daily loss limit hit (P/L $${pnlToday.toFixed(2)})`,
+      killSwitchReason: reason,
     });
     log("warn", "daily_loss_kill_switch", { userId: cfg.userId, pnlToday });
     metrics.killSwitches.inc({ reason_bucket: "daily_loss" });
+    webhook.dispatch(cfg, "daily_loss_limit_hit", {
+      reason,
+      pnlTodayUsd: Number(pnlToday.toFixed(2)),
+      limitUsd: Number(cfg.dailyLossLimitUsd),
+    });
     return;
   }
 

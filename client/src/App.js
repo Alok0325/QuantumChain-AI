@@ -18,6 +18,8 @@ import Profile from './components/Body/Landing/Pages/Profile/Profile';
 import ApiKeys from './components/Body/Landing/Pages/ApiKeys/ApiKeys';
 import TwoFactor from './components/Body/Landing/Pages/TwoFactor/TwoFactor';
 import Reconcile from './components/Body/Landing/Pages/Reconcile/Reconcile';
+import Positions from './components/Body/Landing/Pages/Positions/Positions';
+import Accuracy from './components/Body/Landing/Pages/Accuracy/Accuracy';
 import { BinanceProvider } from './context/BinanceContext';
 import AdminPanel from './components/Admin/AdminPanel';
 import './App.css';
@@ -60,6 +62,8 @@ function App() {
                           <Route path="settings/api-keys" element={<ApiKeys />} />
                           <Route path="settings/2fa" element={<TwoFactor />} />
                           <Route path="settings/reconcile" element={<Reconcile />} />
+                          <Route path="settings/positions" element={<Positions />} />
+                          <Route path="settings/accuracy" element={<Accuracy />} />
                         </Route>
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />

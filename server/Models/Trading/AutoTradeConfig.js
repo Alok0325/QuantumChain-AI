@@ -13,6 +13,13 @@ const HARD_LIMITS = Object.freeze({
   LIVE_ACK_TTL_HOURS: Number(process.env.LIVE_ACK_TTL_HOURS || 24),
   LIVE_FAILURE_THRESHOLD: 3, // consecutive failures before auto kill-switch
   MIN_ORDER_NOTIONAL_USD: 10, // Binance min, plus a small safety buffer
+  WEBHOOK_EVENTS: [
+    "kill_switch_engaged",
+    "daily_loss_limit_hit",
+    "live_order_filled",
+    "live_order_failed",
+    "test",
+  ],
 });
 
 const AutoTradeConfig = sequelize.define(
@@ -114,6 +121,45 @@ const AutoTradeConfig = sequelize.define(
       type: Sequelize.INTEGER,
       allowNull: false,
       defaultValue: 0,
+    },
+    // Optional HTTPS webhook for engine events (kill-switch, daily-loss,
+    // live-fill, live-fail). Validated to https:// and ≤ 512 chars.
+    webhookUrl: {
+      type: Sequelize.STRING(512),
+      allowNull: true,
+      validate: {
+        isHttpsOrEmpty(value) {
+          if (value == null || value === "") return;
+          if (typeof value !== "string" || !/^https:\/\/[^\s]+$/i.test(value)) {
+            throw new Error("webhookUrl must be an https:// URL");
+          }
+        },
+      },
+    },
+    // HMAC-SHA256 secret. Auto-generated on first save of webhookUrl;
+    // revealed to the user exactly once. Receivers verify with the
+    // `X-QC-Signature: sha256=<hex>` header on every delivery.
+    webhookSecret: {
+      type: Sequelize.STRING(128),
+      allowNull: true,
+    },
+    // Event allow-list. Empty/null = all events.
+    webhookEvents: {
+      type: Sequelize.JSON,
+      allowNull: true,
+      validate: {
+        subsetOfWebhookEvents(value) {
+          if (value == null) return;
+          if (!Array.isArray(value)) throw new Error("webhookEvents must be an array or null");
+          const bad = value.filter((e) => !HARD_LIMITS.WEBHOOK_EVENTS.includes(e));
+          if (bad.length) {
+            throw new Error(
+              `unknown webhook event(s): ${bad.join(", ")}. ` +
+                `supported: ${HARD_LIMITS.WEBHOOK_EVENTS.join(", ")}`
+            );
+          }
+        },
+      },
     },
   },
   {

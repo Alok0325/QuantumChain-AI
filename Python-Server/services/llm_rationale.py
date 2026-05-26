@@ -7,13 +7,14 @@ from typing import Optional
 
 from schemas import RationaleRequest, RationaleResponse
 from .news_feed import fetch_news
+from .market_pressure import fetch_taker_pressure
 
 log = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """You are a senior quantitative crypto trading analyst.
-Given a machine-learning model's next-hour OHLC forecast plus a small
-window of recent headlines, you produce a concise, professional trade
-rationale.
+Given a machine-learning model's next-hour OHLC forecast, recent headlines,
+and aggregate taker buy/sell pressure, you produce a concise, professional
+trade rationale.
 
 Hard rules:
 - 2-3 sentences of plain English.
@@ -21,7 +22,8 @@ Hard rules:
   driver. Cite a headline by source name when one is clearly relevant.
 - Surface ONE concrete risk factor a trader should monitor (volatility,
   liquidity, news-driven reversal, regulatory, etc.).
-- If headlines and forecast disagree, lower the `confidence_label`.
+- If headlines, flow, and forecast disagree, lower the `confidence_label`.
+  Agreement across all three is required for "high".
 - Never recommend leverage or specific position sizes.
 - Never claim certainty. Use hedged verbs: "suggests", "favors", "may".
 
@@ -62,7 +64,12 @@ class RationaleService:
         except Exception as e:
             log.warning("rationale: news fetch failed (%s) — proceeding without", e)
             news = []
-        user_msg = self._format_user(req, news)
+        try:
+            pressure = await fetch_taker_pressure(req.symbol)
+        except Exception as e:
+            log.warning("rationale: pressure fetch failed (%s) — proceeding without", e)
+            pressure = None
+        user_msg = self._format_user(req, news, pressure)
         try:
             resp = await self.client.messages.create(
                 model=self.model,
@@ -101,7 +108,11 @@ class RationaleService:
             )
 
     @staticmethod
-    def _format_user(req: RationaleRequest, news: Optional[list[dict]] = None) -> str:
+    def _format_user(
+        req: RationaleRequest,
+        news: Optional[list[dict]] = None,
+        pressure: Optional[dict] = None,
+    ) -> str:
         p = req.predicted
         pct: Optional[float] = None
         if req.current_price:
@@ -118,16 +129,26 @@ class RationaleService:
                 lines.append(f"- [{src} / {sentiment_tag}] {it.get('title', '').strip()}")
             news_block = "\n".join(lines)
 
+        if pressure:
+            flow_block = (
+                f"  24h taker buy ratio: {pressure['buy_ratio_24h']:.2%}\n"
+                f"  4h  taker buy ratio: {pressure['buy_ratio_4h']:.2%}\n"
+                f"  Interpretation: {pressure['interpretation']}"
+            )
+        else:
+            flow_block = "  (pressure feed unavailable)"
+
         return (
             f"Symbol: {req.symbol}\n"
             f"Current spot price: ${req.current_price:,.2f}\n"
-            f"Next-hour LSTM forecast:\n"
+            f"Next-hour ML forecast:\n"
             f"  open  = ${p.open:,.2f}\n"
             f"  high  = ${p.high:,.2f}\n"
             f"  low   = ${p.low:,.2f}\n"
             f"  close = ${p.close:,.2f}\n"
             f"{pct_line}\n"
             f"External sentiment hint: {sentiment}\n"
+            f"\nMarket flow (Binance):\n{flow_block}\n"
             f"\nRecent headlines:\n{news_block}\n\n"
             f"Produce the JSON rationale per the system instructions."
         )

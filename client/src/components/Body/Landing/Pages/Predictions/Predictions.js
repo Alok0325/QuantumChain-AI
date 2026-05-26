@@ -4,7 +4,8 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import predictionService from '../../../../../services/predictionService';
-import useAutoTradeConfig from '../../../../../hooks/useAutoTradeConfig';
+import autoTradeService from '../../../../../services/autoTradeService';
+import useAutoTradeConfig, { WEBHOOK_EVENTS } from '../../../../../hooks/useAutoTradeConfig';
 import AckLiveModal from '../../../../AckLiveModal/AckLiveModal';
 
 const SYMBOLS = [
@@ -49,14 +50,104 @@ const Predictions = () => {
     config: autoTrade,
     synced,
     saving,
+    presets,
     update: updateAutoTrade,
     engageKill,
     clearKill,
     acknowledgeLiveAndEnable,
+    applyPreset,
   } = useAutoTradeConfig();
 
   const [ackOpen, setAckOpen] = useState(false);
   const [ackBusy, setAckBusy] = useState(false);
+  const [webhookDraft, setWebhookDraft] = useState('');
+  const [webhookSaving, setWebhookSaving] = useState(false);
+  const [webhookTesting, setWebhookTesting] = useState(false);
+  const [revealedSecret, setRevealedSecret] = useState(null); // one-time
+  const [deliveries, setDeliveries] = useState(null);
+  const [showDeliveries, setShowDeliveries] = useState(false);
+  const [loadingDeliveries, setLoadingDeliveries] = useState(false);
+
+  const refreshDeliveries = async () => {
+    setLoadingDeliveries(true);
+    try {
+      const r = await autoTradeService.getWebhookDeliveries(50);
+      setDeliveries(Array.isArray(r) ? r : []);
+    } catch (err) {
+      toast.error(`Failed to load deliveries: ${err.message}`);
+    } finally {
+      setLoadingDeliveries(false);
+    }
+  };
+
+  const toggleDeliveries = async () => {
+    const next = !showDeliveries;
+    setShowDeliveries(next);
+    if (next && deliveries === null) await refreshDeliveries();
+  };
+
+  useEffect(() => {
+    setWebhookDraft(autoTrade.webhookUrl || '');
+  }, [autoTrade.webhookUrl]);
+
+  const saveWebhook = async (e) => {
+    e?.preventDefault();
+    setWebhookSaving(true);
+    try {
+      const data = await autoTradeService.updateConfig({
+        webhookUrl: webhookDraft.trim() || null,
+      });
+      if (data?.webhookSecret) setRevealedSecret(data.webhookSecret);
+      await updateAutoTrade({}); // refresh hook state from server
+      toast.success(webhookDraft ? 'Webhook saved.' : 'Webhook cleared.');
+    } catch (err) {
+      toast.error(`Save failed: ${err.message}`);
+    } finally {
+      setWebhookSaving(false);
+    }
+  };
+
+  const testWebhook = async () => {
+    setWebhookTesting(true);
+    try {
+      const r = await autoTradeService.testWebhook();
+      toast.success(`Test event delivered (${r?.status ?? 'ok'}${r?.signed ? ' · signed' : ''}).`);
+    } catch (err) {
+      toast.error(`Webhook test failed: ${err.message}`);
+    } finally {
+      setWebhookTesting(false);
+    }
+  };
+
+  const rotateSecret = async () => {
+    if (!window.confirm('Rotate the webhook secret? Receivers using the old secret will start seeing signature mismatches until updated.')) return;
+    try {
+      const data = await autoTradeService.rotateWebhookSecret();
+      if (data?.webhookSecret) setRevealedSecret(data.webhookSecret);
+      toast.success('New webhook secret generated.');
+    } catch (err) {
+      toast.error(`Rotate failed: ${err.message}`);
+    }
+  };
+
+  const toggleWebhookEvent = (eventId) => {
+    const current = autoTrade.webhookEvents;
+    const all = WEBHOOK_EVENTS.map((e) => e.id);
+    // Treat null/empty as "all selected"; switch to explicit list when user starts toggling.
+    const base = !Array.isArray(current) || current.length === 0 ? [...all] : [...current];
+    const next = base.includes(eventId)
+      ? base.filter((e) => e !== eventId)
+      : [...base, eventId];
+    // If user re-enabled everything, store null (compactest form).
+    const payload = next.length === all.length ? null : next;
+    updateAutoTrade({ webhookEvents: payload });
+  };
+
+  const isEventOn = (eventId) => {
+    const ev = autoTrade.webhookEvents;
+    if (!Array.isArray(ev) || ev.length === 0) return true; // null/[] = all on
+    return ev.includes(eventId);
+  };
 
   useEffect(() => {
     predictionService.health().then(setServiceHealth).catch(() => setServiceHealth(null));
@@ -408,6 +499,29 @@ const Predictions = () => {
           </button>
         </div>
 
+        <div className="flex flex-col gap-2 mb-5">
+          <span className="qc-label-up">Quick presets</span>
+          <div className="flex gap-2 flex-wrap">
+            {presets.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="px-3.5 py-2 rounded-lg text-sm border border-white/10 bg-white/5 text-slate-200 transition hover:bg-white/[0.09] hover:border-cyan-300/40 group"
+                onClick={async () => {
+                  const applied = await applyPreset(p.id);
+                  if (applied) toast.success(`Applied ${applied.name} preset.`);
+                }}
+                title={p.description}
+              >
+                <span className="font-semibold">{p.name}</span>
+                <span className="block text-[0.7rem] text-slate-400 group-hover:text-slate-300 max-w-[260px]">
+                  {p.description}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4 mb-5">
           {[
             { label: 'Max position (USD)', key: 'maxPositionUsd', step: 50, min: 0 },
@@ -462,6 +576,183 @@ const Predictions = () => {
               );
             })}
           </div>
+        </div>
+
+        <div className="mb-4 pt-4 border-t border-white/[0.06]">
+          <span className="qc-label-up">Webhook alerts (optional)</span>
+          <p className="text-xs text-slate-400 mt-1 mb-2 leading-relaxed">
+            Engine events are POSTed as JSON to this URL with an{' '}
+            <code className="font-mono bg-white/[0.06] px-1 rounded">X-QC-Signature</code>{' '}
+            HMAC-SHA256 header. HTTPS only. No secrets are ever sent in the body.
+          </p>
+          <form onSubmit={saveWebhook} className="flex gap-2 flex-wrap">
+            <input
+              type="url"
+              className="qc-input flex-1 min-w-[260px] font-mono text-sm"
+              placeholder="https://discord.com/api/webhooks/…"
+              value={webhookDraft}
+              onChange={(e) => setWebhookDraft(e.target.value)}
+              pattern="https://.+"
+              disabled={webhookSaving}
+            />
+            <button
+              type="submit"
+              className="qc-btn qc-btn-ghost"
+              disabled={webhookSaving || webhookDraft === (autoTrade.webhookUrl || '')}
+            >
+              {webhookSaving ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              type="button"
+              className="qc-btn qc-btn-primary"
+              disabled={webhookTesting || !autoTrade.webhookUrl}
+              onClick={testWebhook}
+              title={!autoTrade.webhookUrl ? 'Save a webhook first' : 'Send a test event'}
+            >
+              {webhookTesting ? 'Testing…' : 'Test'}
+            </button>
+          </form>
+
+          {revealedSecret && (
+            <div className="mt-3 rounded-lg bg-emerald-500/8 border border-emerald-400/30 px-4 py-3">
+              <h4 className="text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-1.5">
+                New webhook secret — copy now
+              </h4>
+              <p className="text-slate-300 text-xs mb-2 leading-relaxed">
+                Receivers verify each delivery with{' '}
+                <code className="font-mono bg-black/30 px-1 rounded">X-QC-Signature: sha256=hmac_sha256(secret, body)</code>.
+                You won&apos;t be shown this value again.
+              </p>
+              <div className="flex gap-2">
+                <code className="flex-1 font-mono text-xs bg-black/40 px-3 py-2 rounded break-all">
+                  {revealedSecret}
+                </code>
+                <button
+                  type="button"
+                  className="qc-btn qc-btn-ghost shrink-0"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(revealedSecret);
+                    toast.info('Secret copied.');
+                  }}
+                >
+                  Copy
+                </button>
+                <button
+                  type="button"
+                  className="qc-btn qc-btn-ghost shrink-0"
+                  onClick={() => setRevealedSecret(null)}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          )}
+
+          {autoTrade.webhookUrl && (
+            <div className="mt-3 flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap text-sm">
+                <span className="text-slate-400">
+                  Signature: {autoTrade.webhookSigned ? (
+                    <code className="font-mono text-emerald-300">{autoTrade.webhookSecretMask}</code>
+                  ) : (
+                    <span className="text-amber-300">unsigned (save the URL to generate)</span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className="qc-btn qc-btn-ghost text-xs"
+                  onClick={rotateSecret}
+                >
+                  Rotate secret
+                </button>
+              </div>
+
+              <div>
+                <span className="qc-label-up">Notify on</span>
+                <div className="flex gap-2 flex-wrap mt-1">
+                  {WEBHOOK_EVENTS.map((ev) => {
+                    const on = isEventOn(ev.id);
+                    return (
+                      <button
+                        key={ev.id}
+                        type="button"
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                          on
+                            ? 'bg-cyan-300/15 text-cyan-300 border-cyan-300/40'
+                            : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/[0.08]'
+                        }`}
+                        onClick={() => toggleWebhookEvent(ev.id)}
+                      >
+                        {on ? '✓ ' : ''}{ev.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  className="text-xs text-slate-400 hover:text-cyan-300 transition"
+                  onClick={toggleDeliveries}
+                >
+                  {showDeliveries ? 'Hide' : 'Show'} recent deliveries
+                  {deliveries && ` (${deliveries.length})`}
+                </button>
+                {showDeliveries && (
+                  <div className="mt-2 rounded-lg bg-black/30 border border-white/[0.06] overflow-x-auto">
+                    {loadingDeliveries ? (
+                      <p className="text-slate-400 text-sm p-3">Loading…</p>
+                    ) : deliveries && deliveries.length > 0 ? (
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr>
+                            {['Time', 'Event', 'Status', 'Δ ms', 'Error'].map((h) => (
+                              <th key={h} className="text-left px-3 py-2 bg-white/[0.04] text-slate-400 uppercase tracking-wider text-[0.65rem] font-semibold">
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {deliveries.map((d) => (
+                            <tr key={d.id} className="border-t border-white/[0.05]">
+                              <td className="px-3 py-2 text-slate-400 whitespace-nowrap">{new Date(d.createdAt).toLocaleString()}</td>
+                              <td className="px-3 py-2 font-mono">{d.event}</td>
+                              <td className={`px-3 py-2 font-semibold ${
+                                d.delivered
+                                  ? d.statusCode >= 200 && d.statusCode < 300 ? 'text-emerald-400' : 'text-amber-300'
+                                  : 'text-rose-400'
+                              }`}>
+                                {d.delivered ? d.statusCode : (d.statusCode || 'NET')}
+                              </td>
+                              <td className="px-3 py-2 text-slate-400">{d.responseMs ?? '—'}</td>
+                              <td className="px-3 py-2 text-rose-400 max-w-xs truncate" title={d.error || ''}>
+                                {d.error || ''}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <p className="text-slate-400 text-sm p-3">No deliveries yet. Fire the Test button above to log one.</p>
+                    )}
+                    <div className="px-3 py-2 border-t border-white/[0.05] flex justify-between items-center">
+                      <span className="text-[0.7rem] text-slate-500">Showing latest 50 attempts.</span>
+                      <button
+                        type="button"
+                        className="text-xs text-cyan-300 hover:underline"
+                        onClick={refreshDeliveries}
+                        disabled={loadingDeliveries}
+                      >
+                        Refresh
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <p className="m-0 px-4 py-3.5 rounded-lg bg-amber-500/8 border border-amber-400/25 text-amber-300 text-sm">

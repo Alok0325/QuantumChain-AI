@@ -206,6 +206,93 @@ KEY_VAULT_OLD_KEY=$OLD KEY_VAULT_NEW_KEY=$NEW npm run rotate-keys
 The script is transactional per row, idempotent (rows already on the new
 key are skipped), and refuses to claim success if any row failed.
 
+### Backtest UI + webhook alerts (Phase 13, signed in Phase 14)
+`/settings/accuracy` consumes `GET /accuracy?symbol=X&lookback_days=N` in
+parallel for every supported symbol and renders a per-symbol bar chart
+with a 50% baseline tick. Each row has a one-click "Train" button.
+
+**Webhooks**: set an `https://` URL in the auto-trade panel and the engine
+will POST `{ event, userId, timestamp, data }` on kill-switch trips,
+daily-loss-limit hits, and live order fills. Compatible with Discord /
+Slack / Zapier incoming webhooks. The dispatcher is fire-and-forget with
+a 5 s timeout and a per-(user, url) circuit breaker (5 failures →
+30 min cooldown) so a flapping endpoint can't impact engine ticks.
+
+**Signed deliveries (Phases 14-15):** every webhook POST carries three
+headers — `X-QC-Event: <name>`, `X-QC-Timestamp: <iso>`, and
+`X-QC-Signature: sha256=<hex>`. The signature is HMAC-SHA256 of
+`${timestamp}.${body}` using a per-user 64-char hex secret that's
+auto-generated on first save and **revealed exactly once**. Including
+the timestamp in the signed payload defeats replay attacks. Verify
+on your side like this (Node):
+
+```js
+const ts = req.headers['x-qc-timestamp'];
+// 1. Freshness: reject anything older than 5 minutes.
+const ageMs = Math.abs(Date.now() - new Date(ts).getTime());
+if (ageMs > 5 * 60 * 1000) return res.status(401).end();
+
+// 2. Signature: HMAC must match.
+const expected = crypto
+  .createHmac('sha256', YOUR_SECRET)
+  .update(`${ts}.${rawBody}`)
+  .digest('hex');
+const sig = (req.headers['x-qc-signature'] || '').replace(/^sha256=/, '');
+const ok = sig && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+if (!ok) return res.status(401).end();
+```
+
+Per-event filters are available via the toggle chips on the Predictions
+page. Rotate the secret any time via the **Rotate secret** button.
+
+**Delivery audit log (Phase 15):** every dispatch is recorded with status
+code, response time, and error (if any). Visible from the Predictions
+page via the "Show recent deliveries" link. Also exposed at
+`GET /trading/webhook/deliveries?limit=N`.
+
+**Retries + retention (Phase 16):** failed deliveries auto-retry up to 2
+times with exponential backoff + full jitter (network errors, 429, 5xx).
+4xx are non-retryable. The audit log keeps the last 1000 rows / 30 days
+per user, pruned opportunistically on every insert. Tune via
+`WEBHOOK_MAX_RETRIES`, `WEBHOOK_BASE_BACKOFF_MS`,
+`WEBHOOK_AUDIT_KEEP_ROWS`, `WEBHOOK_AUDIT_KEEP_DAYS`.
+
+### Flow signal + strategy presets (Phase 12)
+The Claude rationale now consumes a third signal alongside the numeric
+forecast and headlines: **Binance taker buy/sell ratio** over the last 24h
+and 4h. Available standalone via `GET /pressure?symbol=BTC`. The system
+prompt requires forecast + news + flow agreement for the model to label
+its rationale `high` confidence.
+
+**Strategy presets** at `GET /trading/presets` return three opinionated
+one-click profiles (Conservative / Moderate / Aggressive). The Predictions
+page renders them as buttons under the Auto-Trade card; clicking one calls
+`PUT /trading/config` with the preset's settings. Limits are server-owned
+so they always stay within `HARD_LIMITS`.
+
+### Walk-forward retraining (Phase 11)
+The FastAPI service runs a background task that retrains every trained
+symbol every `RETRAIN_INTERVAL_HOURS` (default 24h). Disable with
+`RETRAIN_ENABLED=false`. Inspect at `GET /scheduler`. Because both
+backends re-read model files on each predict, no restart is needed for
+the new model to be picked up.
+
+### Positions UI (Phase 11)
+`/settings/positions` consumes `GET /trading/positions?days=N` and shows
+the engine's ledger-side rollup: net qty per symbol, average entry/exit
+price, realised P/L, and a count of fills / dry-runs / skips / failures
+over the chosen window. For exchange-of-truth view see `/settings/reconcile`.
+
+### TypeScript foothold (Phase 17)
+The client now compiles a mixed JS + TS tree. `client/tsconfig.json` has
+`allowJs: true` so `.js` files keep working as-is. Shared domain types
+live in `client/src/types/` and cover the entire public API surface
+(auto-trade config, predictions, rationale, ledger, positions, reconcile,
+webhooks, API keys, 2FA). The two most-touched services
+(`predictionService.ts`, `autoTradeService.ts`) and the
+`useAutoTradeConfig` hook are fully typed; the rest can be migrated
+file-by-file without breaking the rest of the app.
+
 ### Tailwind CSS (Phase 10)
 The Phase 1-9 pages (Predictions, AckLiveModal, ApiKeys, TwoFactor,
 Reconcile, Login, Register) are written in Tailwind. `src/index.css` exposes
